@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Salon Reservation</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f6f7f8;color:#1f2937}
+header{background:#111827;color:#fff;padding:18px 20px}
+header h1{margin:0;font-size:21px}
+main{max-width:900px;margin:0 auto;padding:20px}
+.card{background:#fff;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0000000d}
+label{display:block;margin:12px 0 5px;font-weight:650}
+input,select,button,textarea{font:inherit}
+input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;background:#fff}
+textarea{min-height:80px;resize:vertical}
+button,.btn{border:0;border-radius:9px;padding:11px 15px;background:#111827;color:#fff;cursor:pointer;text-decoration:none;display:inline-block}
+button:disabled{background:#d1d5db;cursor:not-allowed}
+.choices{display:flex;gap:8px;flex-wrap:wrap}
+.choice{background:#fff;color:#111827;border:1px solid #d1d5db}
+.choice.active{background:#111827;color:#fff}
+.message{margin-top:12px;font-weight:650}
+.muted{color:#6b7280;font-size:14px}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left;vertical-align:top}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.week{display:flex;gap:10px;flex-wrap:wrap}
+.week label{display:flex;align-items:center;gap:5px;font-weight:500;margin:4px 0}
+.week input{width:auto}
+.urlbox{overflow-wrap:anywhere;background:#f3f4f6;padding:12px;border-radius:9px}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}
+@media(max-width:640px){
+  .grid2{grid-template-columns:1fr}
+  main{padding:12px}
+  th,td{padding:8px 5px;font-size:13px}
+}
+</style>
+
+</head>
+<body>
+
+<header><h1>Salon Reservation</h1></header>
+<main>
+  <div class="card">
+    <h2>フルサービス美容室 予約システム</h2>
+    <p class="muted">個人・小規模サロン向け。メニュー時間とスタイリストの勤務予定から空きを自動計算します。</p>
+    <p>
+      <a class="btn" href="reserve.html?shop=demo">お客様予約画面</a>
+      <a class="btn" href="login.html">店舗ログイン</a>
+    </p>
+  </div>
+</main>
+
+
+</body>
+</html>
