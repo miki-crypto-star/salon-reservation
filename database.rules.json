@@ -1,0 +1,38 @@
+{
+  "rules": {
+    "shops": {
+      "$shop": {
+        "settings": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "staffing": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "staffBreaks": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "blockedTimes": {
+          ".read": true,
+          ".write": "auth != null"
+        },
+        "reservations": {
+          ".read": "auth != null",
+          ".write": true
+        },
+        "slotCounts": {
+          ".read": true,
+          ".write": true
+        }
+      }
+    },
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid == $uid",
+        ".write": false
+      }
+    }
+  }
+}

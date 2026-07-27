@@ -1,0 +1,32 @@
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>店舗設定</title><style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:#f6f7f8;color:#1f2937}
+header{background:#111827;color:white;padding:18px 20px}header h1{margin:0;font-size:21px}
+main{max-width:900px;margin:auto;padding:20px}.card{background:white;border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0000000d}
+label{display:block;margin:12px 0 5px;font-weight:650}input,select,textarea{width:100%;padding:11px;border:1px solid #d1d5db;border-radius:9px;font:inherit}
+textarea{min-height:80px}button,.btn{border:0;border-radius:9px;padding:11px 15px;background:#111827;color:white;cursor:pointer;text-decoration:none;display:inline-block;font:inherit}
+button:disabled{background:#d1d5db}.choices{display:flex;gap:8px;flex-wrap:wrap}.choice{background:white;color:#111827;border:1px solid #d1d5db}.choice.active{background:#111827;color:white}
+nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}.muted{color:#6b7280}.message{margin-top:12px;font-weight:650}
+table{width:100%;border-collapse:collapse}th,td{padding:10px;border-bottom:1px solid #e5e7eb;text-align:left}.grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.complete{display:none;text-align:center}.complete.show{display:block}.datetime{font-size:30px;font-weight:850;padding:20px;border:2px solid #111827;border-radius:14px}
+@media(max-width:640px){.grid2{grid-template-columns:1fr}main{padding:12px}}
+</style></head><body>
+<header><h1>店舗設定</h1></header><main><nav><a class="btn" href="admin.html">予約管理</a><a class="btn" href="settings.html">設定</a></nav>
+<form id="form" class="card"><label>店舗名</label><input id="shopName"><div class="grid2"><div><label>開店時間</label><input id="openTime" type="time"></div><div><label>閉店時間</label><input id="closeTime" type="time"></div></div>
+<div class="grid2"><div><label>1枠（分）</label><input id="slotMinutes" type="number" min="5"></div><div><label>通常スタッフ人数</label><input id="defaultStaffCount" type="number" min="1"></div></div>
+<label>予約受付日数（最大90日）</label><input id="maxBookingDays" type="number" min="0" max="90"><br><br><button>保存</button><div id="msg" class="message"></div></form></main>
+<script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
+import { getDatabase, ref, get, set, update, push, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
+const firebaseConfig = {
+  apiKey: "AIzaSyBH_4WbAPUfJe5L6cqveey4Qj7UYndyG8o",
+  authDomain: "salon-reservation-74af5.firebaseapp.com",
+  databaseURL: "https://salon-reservation-74af5-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "salon-reservation-74af5",
+  storageBucket: "salon-reservation-74af5.firebasestorage.app",
+  messagingSenderId: "999192738309",
+  appId: "1:999192738309:web:584f3724a552b80a0bba6c"
+};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);let shop="";
+onAuthStateChanged(auth,async u=>{if(!u){location.href="login.html";return}const s=await get(ref(db,`users/${u.uid}/shopCode`));if(!s.exists())return;shop=s.val();const x=await get(ref(db,`shops/${shop}/settings`)),v=x.val()||{};shopName.value=v.shopName||"";openTime.value=v.openTime||"09:00";closeTime.value=v.closeTime||"19:00";slotMinutes.value=v.slotMinutes||15;defaultStaffCount.value=v.defaultStaffCount||1;maxBookingDays.value=v.maxBookingDays??7;});
+form.onsubmit=async e=>{e.preventDefault();await update(ref(db,`shops/${shop}/settings`),{shopName:shopName.value.trim(),openTime:openTime.value,closeTime:closeTime.value,slotMinutes:Number(slotMinutes.value),defaultStaffCount:Number(defaultStaffCount.value),maxBookingDays:Math.min(90,Number(maxBookingDays.value))});msg.textContent="保存しました。";};
+</script></body></html>
