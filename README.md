@@ -1,12 +1,40 @@
-# Salon Reservation Clean
-Firebase project: salon-reservation-74af5
+# フルサービス美容室予約 v1
 
-Files:
-- index.html
-- reserve.html
-- login.html
-- admin.html
-- settings.html
-- database.rules.json
+1000円カット向けSimple版とは別アプリです。既存客中心の個人・小規模フルサービス美容室向けです。
 
-GitHub Pages: main / (root)
+## v1の機能
+- メニュー登録（料金なし）
+- 複数メニュー選択 → 施術時間を合計して連続枠を確保
+- スタイリストごとの対応メニュー・施術時間
+- 曜日別の出勤/退勤
+- 日別の休み・遅出・早退・勤務時間上書き
+- 休憩/私用などの予定ブロック
+- スタイリストごとのインターバル
+- 退勤後の延長許容時間（任意）
+- 予約開始時刻 5/10/15/30分刻み
+- 担当者指名 / 誰でもOK
+- 実際に連続して空いている開始時刻だけ表示
+- Firebaseトランザクションによるダブルブッキング対策
+- 電話/店頭予約
+- 予約変更（開始時間・担当者）
+- 予約キャンセルと枠復元
+- 当日予約ON/OFF、予約締切、何日先まで予約可能か設定
+- 予約完了画面（日時・担当・メニューを大きく表示）
+- スクリーンショット保存案内
+- iPhone/Android向けカレンダー追加（ICS）
+- shopCodeによる多店舗分離
+- お客様用URL・QR表示
+
+## 今回入れない機能
+- 料金・会計・決済
+- 顧客履歴/CRM
+- POS・在庫
+- クーポン・ポイント・口コミ・集客
+
+## Firebase
+`salon-reservation-74af5` の正しいFirebase設定を組み込み済みです。
+Realtime Databaseのルールは同梱の `database.rules.json` を反映してください。
+
+管理者: `users/{UID}/shopCode = "demo"`
+
+最初に `settings.html` を開き、実際のメニューとスタイリストを登録してください。
