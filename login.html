@@ -26,5 +26,6 @@ const firebaseConfig = {
   appId: "1:999192738309:web:584f3724a552b80a0bba6c"
 };
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const loginForm=document.getElementById('loginForm'),email=document.getElementById('email'),password=document.getElementById('password'),msg=document.getElementById('msg');
 loginForm.onsubmit=async e=>{e.preventDefault();msg.textContent='';try{const c=await signInWithEmailAndPassword(auth,email.value.trim(),password.value);const s=await get(ref(db,`users/${c.user.uid}/shopCode`));if(!s.exists())throw new Error('店舗未設定');localStorage.setItem('shopCode',s.val());location.href='admin.html';}catch(err){console.error(err);msg.textContent=`ログインできません：${err.code||err.message}`;}};
 </script></body></html>

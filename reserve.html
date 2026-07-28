@@ -29,6 +29,11 @@ const firebaseConfig = {
 };
 
 const app=initializeApp(firebaseConfig),db=getDatabase(app),shop=new URLSearchParams(location.search).get('shop')||'demo';
+const menuList=document.getElementById('menuList'),staffSel=document.getElementById('staffSel'),dates=document.getElementById('dates'),
+slots=document.getElementById('slots'),form=document.getElementById('form'),custName=document.getElementById('custName'),
+phone=document.getElementById('phone'),note=document.getElementById('note'),msg=document.getElementById('msg'),done=document.getElementById('done'),
+doneTime=document.getElementById('doneTime'),doneInfo=document.getElementById('doneInfo'),calendarBtn=document.getElementById('calendarBtn'),
+title=document.getElementById('title');
 let settings={},menus={},staff={},selectedMenus=[],selectedDate='',selectedChoice=null;
 const tmin=t=>{const[a,b]=t.split(':').map(Number);return a*60+b},fmt=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
 const dkey=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;

@@ -38,6 +38,11 @@ const firebaseConfig = {
 };
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const $=id=>document.getElementById(id);
+const saveAll=$('saveAll'), logout=$('logout'), shopName=$('shopName'), slotStep=$('slotStep'),
+maxDays=$('maxDays'), sameDay=$('sameDay'), cutoff=$('cutoff'), closedDays=$('closedDays'),
+customerUrl=$('customerUrl'), customerQr=$('customerQr'), menuList=$('menuList'),
+addMenu=$('addMenu'), staffList=$('staffList'), addStaff=$('addStaff'), msg=$('msg');
 let shop='', menus={}, staff={}, settings={};
 const days=['日','月','火','水','木','金','土'];
 const newId=()=>crypto.randomUUID().replaceAll('-','').slice(0,12);
@@ -45,7 +50,7 @@ const newId=()=>crypto.randomUUID().replaceAll('-','').slice(0,12);
 onAuthStateChanged(auth,async u=>{
  if(!u){location.href='login.html';return}
  const s=await get(ref(db,`users/${u.uid}/shopCode`)); if(!s.exists()){location.href='login.html';return}
- shop=s.val(); await load();
+ shop=s.val(); try{await load();}catch(err){console.error(err);msg.textContent='設定読み込みエラー：'+(err.message||err);}
 });
 logout.onclick=async()=>{await signOut(auth);localStorage.clear();location.href='login.html'};
 
@@ -79,6 +84,9 @@ saveAll.onclick=async()=>{
  document.querySelectorAll('[data-work]').forEach(x=>{const [s,d]=x.dataset.work.split(':');staff[s].weekly[d].off=!x.checked});document.querySelectorAll('[data-start]').forEach(x=>{const [s,d]=x.dataset.start.split(':');staff[s].weekly[d].start=x.value});document.querySelectorAll('[data-end]').forEach(x=>{const [s,d]=x.dataset.end.split(':');staff[s].weekly[d].end=x.value});
  document.querySelectorAll('[data-enabled]').forEach(x=>{const [s,m]=x.dataset.enabled.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].enabled=x.checked});document.querySelectorAll('[data-sminutes]').forEach(x=>{const [s,m]=x.dataset.sminutes.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].minutes=+x.value||menus[m].baseMinutes||60});
  settings={shopName:shopName.value.trim()||'美容室',slotStep:+slotStep.value||10,maxBookingDays:+maxDays.value||90,sameDay:sameDay.value==='true',cutoffMinutes:+cutoff.value||0,closedDays:[...closedDays.querySelectorAll('input:checked')].map(x=>Number(x.value))};
- await Promise.all([set(ref(db,`shops/${shop}/settings`),settings),set(ref(db,`shops/${shop}/menus`),menus),set(ref(db,`shops/${shop}/staff`),staff)]);msg.textContent='保存しました。';
+ try{
+ await Promise.all([set(ref(db,`shops/${shop}/settings`),settings),set(ref(db,`shops/${shop}/menus`),menus),set(ref(db,`shops/${shop}/staff`),staff)]);
+ msg.textContent='保存しました。';
+}catch(err){console.error(err);msg.textContent='保存エラー：'+(err.message||err);}
 };
 </script></body></html>
