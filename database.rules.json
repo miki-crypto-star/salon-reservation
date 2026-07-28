@@ -16,39 +16,30 @@
           ".read": true,
           ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode"
         },
-        "stylists": {
+        "staff": {
           ".read": true,
           ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode"
         },
-        "dateOverrides": {
+        "workOverrides": {
           ".read": true,
           ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode"
         },
-        "staffBlocks": {
+        "blocks": {
           ".read": true,
           ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode"
         },
-        "busyGrid": {
+        "locks": {
           ".read": true,
-          "$date": {
-            "$stylistId": {
-              ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode || newData.exists()"
-            }
-          }
+          ".write": true
         },
         "reservations": {
           "$date": {
             ".read": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode",
-            "$bookingId": {
-              ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode || !data.exists()",
-              ".validate": "newData.hasChildren(['time','endTime','duration','stylistId','name','phone','status','createdAt']) && newData.child('time').isString() && newData.child('endTime').isString() && newData.child('duration').isNumber() && newData.child('stylistId').isString() && newData.child('name').isString() && newData.child('phone').isString() && ((newData.child('status').val() === 'reserved') || (auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode && newData.child('status').val() === 'cancelled')) && newData.child('createdAt').isNumber()"
+            "$id": {
+              ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode || !data.exists()"
             }
           }
-        },
-        "staffing": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode" },
-        "staffBreaks": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode" },
-        "blockedTimes": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode" },
-        "slotCounts": { ".read": true, ".write": "auth != null && root.child('users').child(auth.uid).child('shopCode').val() === $shopCode" }
+        }
       }
     }
   }
