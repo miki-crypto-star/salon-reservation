@@ -38,11 +38,6 @@ const firebaseConfig = {
 };
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
-const el=id=>document.getElementById(id);
-const saveAll=el('saveAll'),logout=el('logout'),shopName=el('shopName'),slotStep=el('slotStep'),
-maxDays=el('maxDays'),sameDay=el('sameDay'),cutoff=el('cutoff'),menuList=el('menuList'),
-addMenu=el('addMenu'),staffList=el('staffList'),addStaff=el('addStaff'),msg=el('msg'),
-closedDays=el('closedDays'),customerUrl=el('customerUrl'),customerQr=el('customerQr');
 const $=id=>document.getElementById(id);
 const saveAll=$('saveAll'), logout=$('logout'), shopName=$('shopName'), slotStep=$('slotStep'),
 maxDays=$('maxDays'), sameDay=$('sameDay'), cutoff=$('cutoff'), closedDays=$('closedDays'),
@@ -65,19 +60,69 @@ async function load(){
     get(ref(db,`shops/${shop}/menus`)),
     get(ref(db,`shops/${shop}/staff`))
   ]);
-  settings=a.val()||{shopName:'美容室',slotStep:10,maxBookingDays:90,sameDay:true,cutoffMinutes:60,closedDays:[]};
+
+  settings=a.val()||{};
   menus=b.val()||{};
   staff=c.val()||{};
-  shopName.value=settings.shopName||'';
+
+  // Old/current JSON compatibility.
+  for(const [mid,m] of Object.entries(menus)){
+    if(m.baseMinutes==null) m.baseMinutes=Number(m.minutes||60);
+    if(m.name==null) m.name='メニュー';
+  }
+
+  for(const [sid,st] of Object.entries(staff)){
+    st.name=st.name||'スタイリスト';
+    st.intervalMinutes=Number(st.intervalMinutes||0);
+    st.extensionMinutes=Number(st.extensionMinutes||0);
+
+    if(!st.weekly){
+      st.weekly={};
+      for(let i=0;i<7;i++){
+        st.weekly[i]={
+          off:false,
+          start:st.startTime||'09:00',
+          end:st.endTime||'19:00'
+        };
+      }
+    }
+
+    st.services=st.services||{};
+    for(const [mid,m] of Object.entries(menus)){
+      if(!st.services[mid]){
+        st.services[mid]={enabled:true,minutes:Number(m.baseMinutes||60)};
+      }else{
+        if(st.services[mid].minutes==null) st.services[mid].minutes=Number(m.baseMinutes||60);
+        if(st.services[mid].enabled==null) st.services[mid].enabled=true;
+      }
+    }
+  }
+
+  // Support either [1,2] or old object format such as {sun:true}.
+  let closed=settings.closedDays||[];
+  if(!Array.isArray(closed)){
+    const map={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+    closed=Object.entries(closed).filter(([,v])=>!!v).map(([k])=>map[k]).filter(v=>v!==undefined);
+  }
+  settings.closedDays=closed;
+
+  shopName.value=settings.shopName||'美容室';
   slotStep.value=String(settings.slotStep||10);
-  maxDays.value=settings.maxBookingDays||90;
+  maxDays.value=Number(settings.maxBookingDays||90);
   sameDay.value=String(settings.sameDay!==false);
-  cutoff.value=settings.cutoffMinutes||0;
-  if(closedDays) closedDays.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=(settings.closedDays||[]).includes(Number(x.value)));
-  const u=new URL('reserve.html', location.href);
+  cutoff.value=Number(settings.cutoffMinutes||0);
+
+  closedDays.querySelectorAll('input[type="checkbox"]').forEach(
+    x=>x.checked=settings.closedDays.includes(Number(x.value))
+  );
+
+  const u=new URL('reserve.html',location.href);
   u.searchParams.set('shop',shop);
-  if(customerUrl) customerUrl.value=u.href;
-  if(customerQr) customerQr.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(u.href);
+  customerUrl.value=u.href;
+
+  // QR is created from the generated customer URL.
+  customerQr.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(u.href);
+
   render();
 }
 function render(){
@@ -93,8 +138,13 @@ function render(){
   d.innerHTML=`<div class="row"><div><label>スタイリスト名</label><input data-sname="${sid}" value="${s.name||''}"></div><div><label>インターバル（分）</label><input data-gap="${sid}" type="number" min="0" value="${s.intervalMinutes||0}"></div><div><label>退勤後の延長許容（分）</label><input data-ext="${sid}" type="number" min="0" value="${s.extensionMinutes||0}"></div><div style="flex:.4"><button type="button" class="danger" data-sd="${sid}">削除</button></div></div><h3>対応メニュー・施術時間</h3>${services}<h3 style="margin-top:16px">通常勤務</h3><table><tr><th>曜日</th><th>出勤</th><th>開始</th><th>終了</th></tr>${weekly}</table>`;staffList.append(d);
  });
 }
-addMenu.onclick=()=>{menus[newId()]={name:'新規メニュー',baseMinutes:60};render()};
-addStaff.onclick=()=>{const weekly={};for(let i=0;i<7;i++)weekly[i]={off:i===0,start:'09:00',end:'19:00'};staff[newId()]={name:'スタイリスト',intervalMinutes:10,extensionMinutes:0,weekly,services:{}};render()};
+addMenu.onclick=()=>{menus[newId()]={name:'新規メニュー',baseMinutes:60};render();msg.textContent='メニューを追加しました。「すべて保存」を押すとFirebaseに保存されます。'};
+addStaff.onclick=()=>{
+ const weekly={};for(let i=0;i<7;i++)weekly[i]={off:false,start:'09:00',end:'19:00'};
+ const services={};for(const [mid,m] of Object.entries(menus))services[mid]={enabled:true,minutes:Number(m.baseMinutes||60)};
+ staff[newId()]={name:'スタイリスト',intervalMinutes:10,extensionMinutes:0,weekly,services};
+ render();msg.textContent='スタイリストを追加しました。「すべて保存」を押すとFirebaseに保存されます。';
+};
 document.addEventListener('click',e=>{if(e.target.dataset.md){delete menus[e.target.dataset.md];render()}if(e.target.dataset.sd){delete staff[e.target.dataset.sd];render()}});
 saveAll.onclick=async()=>{
  document.querySelectorAll('[data-mname]').forEach(x=>menus[x.dataset.mname].name=x.value.trim()); document.querySelectorAll('[data-mbase]').forEach(x=>menus[x.dataset.mbase].baseMinutes=+x.value||60);

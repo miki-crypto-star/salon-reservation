@@ -44,6 +44,24 @@ const [ss,ms,st]=await Promise.all([
  get(ref(db,`shops/${shop}/staff`))
 ]);
 settings=ss.val()||{};menus=ms.val()||{};staff=st.val()||{};
+for(const [mid,m] of Object.entries(menus)){
+ if(m.baseMinutes==null)m.baseMinutes=Number(m.minutes||60);
+}
+for(const [sid,x] of Object.entries(staff)){
+ x.intervalMinutes=Number(x.intervalMinutes||0);
+ x.extensionMinutes=Number(x.extensionMinutes||0);
+ if(!x.weekly){
+   x.weekly={};for(let i=0;i<7;i++)x.weekly[i]={off:false,start:x.startTime||'09:00',end:x.endTime||'19:00'};
+ }
+ x.services=x.services||{};
+ for(const [mid,m] of Object.entries(menus)){
+   if(!x.services[mid])x.services[mid]={enabled:true,minutes:Number(m.baseMinutes||60)};
+ }
+}
+if(!Array.isArray(settings.closedDays)){
+ const dm={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6};
+ settings.closedDays=Object.entries(settings.closedDays||{}).filter(([,v])=>!!v).map(([k])=>dm[k]).filter(v=>v!==undefined);
+}
 if(!ss.exists()){msg.textContent='店舗設定がありません。';throw new Error('shop not found');}title.textContent=settings.shopName||'美容室予約';
 Object.entries(menus).forEach(([id,m])=>menuList.insertAdjacentHTML('beforeend',`<label class="item"><input style="width:auto" type="checkbox" value="${id}"> ${m.name} <span class="muted">基本 ${m.baseMinutes||0}分</span></label>`));
 Object.entries(staff).forEach(([id,s])=>staffSel.add(new Option(s.name,id)));
