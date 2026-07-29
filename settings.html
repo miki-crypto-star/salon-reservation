@@ -1,29 +1,29 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>美容室予約設定</title><style>
-:root{--bg:#f6f7f8;--card:#fff;--text:#1f2937;--sub:#6b7280;--line:#e5e7eb;--dark:#172033;--danger:#b91c1c;--accent:#2563eb;--ok:#166534}
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>設定</title><style>
+:root{--bg:#f6f7f8;--card:#fff;--text:#1f2937;--sub:#6b7280;--line:#e5e7eb;--dark:#111827;--danger:#b91c1c;--accent:#2563eb}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{background:var(--dark);color:#fff;padding:18px 20px}header h1{margin:0;font-size:21px}main{max-width:1180px;margin:auto;padding:20px}
 .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0000000d}h2,h3{margin-top:0}
 label{display:block;margin:10px 0 5px;font-weight:700}.muted{color:var(--sub);font-size:14px}.small{font-size:12px}.big{font-size:27px;font-weight:850}
 input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:9px;background:#fff}textarea{min-height:80px}
-button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#fff!important;color:var(--dark)!important;border:1px solid #d1d5db!important}.danger{background:var(--danger)!important}.accent{background:var(--accent)!important}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
-.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}.message{font-weight:700;margin-top:10px;white-space:pre-wrap}.choice{background:#fff;color:var(--dark);border:1px solid #d1d5db;margin:4px}.choice.active{background:var(--dark);color:#fff}.choice:disabled{opacity:.35;cursor:not-allowed}
-.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.ok{background:#f0fdf4;color:var(--ok);padding:10px;border-radius:10px}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}.urlbox{overflow-wrap:anywhere;background:#f3f4f6;padding:10px;border-radius:9px}
-@media(max-width:760px){main{padding:12px}.grid2,.grid3{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
-</style></head><body>
-<header><h1>美容室 予約設定</h1></header><main>
+button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#fff!important;color:var(--dark)!important;border:1px solid #d1d5db!important}.danger{background:var(--danger)!important}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}.message{font-weight:700;margin-top:10px}.choice{background:#fff;color:var(--dark);border:1px solid #d1d5db;margin:4px}.choice.active{background:var(--dark);color:#fff}.choice:disabled{opacity:.35;cursor:not-allowed}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}
+@media(max-width:760px){main{padding:12px}.grid2,.grid3,.grid4{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
+</style></head><body><header><h1>美容室 予約設定</h1></header><main>
 <nav><a class="btn secondary" href="admin.html">予約管理</a><button id="saveAll">すべて保存</button><button id="logout" class="secondary">ログアウト</button></nav>
-<section class="card"><h2>予約受付設定</h2><div class="grid3">
-<div><label>店舗名</label><input id="shopName"></div><div><label>予約開始時刻の刻み</label><select id="slotStep"><option value="5">5分</option><option value="10">10分</option><option value="15">15分</option><option value="30">30分</option></select></div>
-<div><label>何日先まで予約可能</label><input id="maxDays" type="number" min="1" max="365"></div><div><label>当日予約</label><select id="sameDay"><option value="true">受け付ける</option><option value="false">受け付けない</option></select></div>
-<div><label>予約締切（開始何分前）</label><input id="cutoff" type="number" min="0"></div></div></section>
-<section class="card"><h2>店舗の定休日</h2><p class="muted">店舗全体で予約を受け付けない曜日です。</p><div id="closedDays" class="row">
-<label><input style="width:auto" type="checkbox" value="0"> 日</label><label><input style="width:auto" type="checkbox" value="1"> 月</label><label><input style="width:auto" type="checkbox" value="2"> 火</label><label><input style="width:auto" type="checkbox" value="3"> 水</label><label><input style="width:auto" type="checkbox" value="4"> 木</label><label><input style="width:auto" type="checkbox" value="5"> 金</label><label><input style="width:auto" type="checkbox" value="6"> 土</label></div></section>
-<section class="card"><h2>お客様予約URL・QR</h2><p class="muted">LINE、ホームページ、SNSからこのURLへ案内できます。</p><div class="row"><input id="customerUrl" readonly><button id="copyUrl" type="button" class="secondary">URLをコピー</button></div><div style="margin-top:12px"><img id="customerQr" alt="予約QRコード" width="190" height="190"><div id="qrFallback" class="muted"></div></div></section>
+<section class="card"><h2>予約受付設定</h2><div class="grid3"><div><label>店舗名</label><input id="shopName"></div><div><label>予約開始時刻の刻み</label><select id="slotStep"><option value="5">5分</option><option value="10">10分</option><option value="15">15分</option><option value="30">30分</option></select></div><div><label>何日先まで予約可能</label><input id="maxDays" type="number" min="1" max="365"></div><div><label>当日予約</label><select id="sameDay"><option value="true">受け付ける</option><option value="false">受け付けない</option></select></div><div><label>予約締切（開始何分前）</label><input id="cutoff" type="number" min="0"></div></div></section>
+<section class="card"><h2>店舗の定休日</h2><p class="muted">店舗全体で予約を受け付けない曜日を選択します。</p>
+<div id="closedDays" class="row">
+<label><input type="checkbox" value="0" style="width:auto">日</label><label><input type="checkbox" value="1" style="width:auto">月</label>
+<label><input type="checkbox" value="2" style="width:auto">火</label><label><input type="checkbox" value="3" style="width:auto">水</label>
+<label><input type="checkbox" value="4" style="width:auto">木</label><label><input type="checkbox" value="5" style="width:auto">金</label>
+<label><input type="checkbox" value="6" style="width:auto">土</label></div></section>
+<section class="card"><h2>お客様予約URL・QR</h2><p class="muted">このURLをLINE・ホームページ・SNSでお客様に案内できます。</p>
+<input id="customerUrl" readonly><div style="margin-top:12px"><img id="customerQr" alt="予約QRコード" width="180" height="180"></div></section>
 <section class="card"><h2>メニュー</h2><p class="muted">料金は登録しません。予約枠計算に必要な施術時間だけ設定します。</p><div id="menuList"></div><button id="addMenu" type="button">＋ メニュー追加</button></section>
-<section class="card"><h2>スタイリスト</h2><p class="muted">対応メニュー、施術時間、インターバル、退勤後の延長許容、曜日別勤務を設定します。</p><div id="staffList"></div><button id="addStaff" type="button">＋ スタイリスト追加</button></section>
-<div id="msg" class="message"></div></main>
+<section class="card"><h2>スタイリスト</h2><p class="muted">対応メニュー、個別施術時間、インターバル、退勤後の延長許容、曜日別勤務時間を設定します。</p><div id="staffList"></div><button id="addStaff" type="button">＋ スタイリスト追加</button></section><div id="msg" class="message"></div></main>
 <script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
@@ -36,21 +36,75 @@ const firebaseConfig = {
   messagingSenderId: "999192738309",
   appId: "1:999192738309:web:584f3724a552b80a0bba6c"
 };
-const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app),$=id=>document.getElementById(id);
-const saveAll=$('saveAll'),logout=$('logout'),shopName=$('shopName'),slotStep=$('slotStep'),maxDays=$('maxDays'),sameDay=$('sameDay'),cutoff=$('cutoff'),closedDays=$('closedDays'),customerUrl=$('customerUrl'),customerQr=$('customerQr'),copyUrl=$('copyUrl'),qrFallback=$('qrFallback'),menuList=$('menuList'),addMenu=$('addMenu'),staffList=$('staffList'),addStaff=$('addStaff'),msg=$('msg');
-let shop='',menus={},staff={},settings={};const days=['日','月','火','水','木','金','土'];
-const newId=()=>((crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2))).replaceAll('-','').slice(0,14);
-const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-onAuthStateChanged(auth,async u=>{if(!u){location.href='login.html';return}try{const us=await get(ref(db,`users/${u.uid}/shopCode`));if(!us.exists())throw new Error('店舗未設定');shop=us.val();setCustomerLink();await load();}catch(err){console.error(err);msg.textContent='設定読み込みエラー：'+(err.code||err.message||err);}});
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
+const el=id=>document.getElementById(id);
+const saveAll=el('saveAll'),logout=el('logout'),shopName=el('shopName'),slotStep=el('slotStep'),
+maxDays=el('maxDays'),sameDay=el('sameDay'),cutoff=el('cutoff'),menuList=el('menuList'),
+addMenu=el('addMenu'),staffList=el('staffList'),addStaff=el('addStaff'),msg=el('msg'),
+closedDays=el('closedDays'),customerUrl=el('customerUrl'),customerQr=el('customerQr');
+const $=id=>document.getElementById(id);
+const saveAll=$('saveAll'), logout=$('logout'), shopName=$('shopName'), slotStep=$('slotStep'),
+maxDays=$('maxDays'), sameDay=$('sameDay'), cutoff=$('cutoff'), closedDays=$('closedDays'),
+customerUrl=$('customerUrl'), customerQr=$('customerQr'), menuList=$('menuList'),
+addMenu=$('addMenu'), staffList=$('staffList'), addStaff=$('addStaff'), msg=$('msg');
+let shop='', menus={}, staff={}, settings={};
+const days=['日','月','火','水','木','金','土'];
+const newId=()=>((crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2))).replaceAll('-','').slice(0,12);
+
+onAuthStateChanged(auth,async u=>{
+ if(!u){location.href='login.html';return}
+ const s=await get(ref(db,`users/${u.uid}/shopCode`)); if(!s.exists()){location.href='login.html';return}
+ shop=s.val(); try{await load();}catch(err){console.error(err);msg.textContent='設定読み込みエラー：'+(err.message||err);}
+});
 logout.onclick=async()=>{await signOut(auth);localStorage.clear();location.href='login.html'};
-function setCustomerLink(){const u=new URL('reserve.html',location.href);u.searchParams.set('shop',shop);customerUrl.value=u.href;customerQr.src='https://api.qrserver.com/v1/create-qr-code/?size=190x190&data='+encodeURIComponent(u.href);customerQr.onerror=()=>{qrFallback.textContent='QR画像を取得できませんでした。上の予約URLは利用できます。';};}
-copyUrl.onclick=async()=>{try{await navigator.clipboard.writeText(customerUrl.value);msg.textContent='予約URLをコピーしました。';}catch{customerUrl.select();document.execCommand('copy');msg.textContent='予約URLをコピーしました。';}};
-async function load(){const [ss,ms,ts]=await Promise.all([get(ref(db,`shops/${shop}/settings`)),get(ref(db,`shops/${shop}/menus`)),get(ref(db,`shops/${shop}/staff`))]);settings=ss.val()||{shopName:'美容室',slotStep:10,maxBookingDays:90,sameDay:true,cutoffMinutes:60,closedDays:[]};menus=ms.val()||{};staff=ts.val()||{};shopName.value=settings.shopName||'';slotStep.value=String(settings.slotStep||10);maxDays.value=settings.maxBookingDays||90;sameDay.value=String(settings.sameDay!==false);cutoff.value=settings.cutoffMinutes||0;closedDays.querySelectorAll('input').forEach(x=>x.checked=(Array.isArray(settings.closedDays)?settings.closedDays:[]).includes(Number(x.value)));render();}
-function render(){menuList.innerHTML='';for(const [id,m] of Object.entries(menus)){const d=document.createElement('div');d.className='item';d.innerHTML=`<div class="row"><div><label>メニュー名</label><input data-mname="${id}" value="${esc(m.name)}"></div><div><label>基本施術時間（分）</label><input data-mbase="${id}" type="number" min="5" value="${Number(m.baseMinutes)||60}"></div><div style="flex:.35"><button type="button" class="danger" data-md="${id}">削除</button></div></div>`;menuList.append(d)}if(!Object.keys(menus).length)menuList.innerHTML='<p class="muted">メニューがありません。「＋ メニュー追加」から追加してください。</p>';
-staffList.innerHTML='';for(const [sid,s] of Object.entries(staff)){const d=document.createElement('div');d.className='item';const services=Object.entries(menus).map(([mid,m])=>{const sv=s.services?.[mid]||{enabled:false,minutes:Number(m.baseMinutes)||60};return `<div class="row"><label style="flex:2"><input style="width:auto" type="checkbox" data-enabled="${sid}:${mid}" ${sv.enabled?'checked':''}> ${esc(m.name)}</label><div><input type="number" min="5" data-sminutes="${sid}:${mid}" value="${Number(sv.minutes)||Number(m.baseMinutes)||60}"></div><div class="small">分</div></div>`}).join('')||'<p class="muted">先にメニューを登録してください。</p>';const weekly=days.map((x,i)=>{const w=s.weekly?.[i]||{off:i===1,start:'09:00',end:'19:00'};return `<tr><td>${x}</td><td><input style="width:auto" type="checkbox" data-work="${sid}:${i}" ${!w.off?'checked':''}></td><td><input type="time" data-start="${sid}:${i}" value="${w.start||'09:00'}"></td><td><input type="time" data-end="${sid}:${i}" value="${w.end||'19:00'}"></td></tr>`}).join('');d.innerHTML=`<div class="row"><div><label>スタイリスト名</label><input data-sname="${sid}" value="${esc(s.name)}"></div><div><label>インターバル（分）</label><input data-gap="${sid}" type="number" min="0" value="${Number(s.intervalMinutes)||0}"></div><div><label>退勤後の延長許容（分）</label><input data-ext="${sid}" type="number" min="0" value="${Number(s.extensionMinutes)||0}"></div><div style="flex:.35"><button type="button" class="danger" data-sd="${sid}">削除</button></div></div><h3>対応メニュー・施術時間</h3>${services}<h3 style="margin-top:16px">通常勤務</h3><table><tr><th>曜日</th><th>出勤</th><th>開始</th><th>終了</th></tr>${weekly}</table>`;staffList.append(d)}if(!Object.keys(staff).length)staffList.innerHTML='<p class="muted">スタイリストがいません。「＋ スタイリスト追加」から追加してください。</p>';}
-addMenu.onclick=()=>{const id=newId();menus[id]={name:'新規メニュー',baseMinutes:60};render();msg.textContent='メニューを追加しました。内容を入力して「すべて保存」を押してください。';};
-addStaff.onclick=()=>{const id=newId(),weekly={};for(let i=0;i<7;i++)weekly[i]={off:i===1,start:'09:00',end:'19:00'};staff[id]={name:'スタイリスト',intervalMinutes:10,extensionMinutes:0,weekly,services:{}};render();msg.textContent='スタイリストを追加しました。内容を設定して「すべて保存」を押してください。';};
-document.addEventListener('click',e=>{if(e.target.dataset.md){const id=e.target.dataset.md;delete menus[id];for(const s of Object.values(staff))if(s.services)delete s.services[id];render()}if(e.target.dataset.sd){delete staff[e.target.dataset.sd];render()}});
-saveAll.onclick=async()=>{try{document.querySelectorAll('[data-mname]').forEach(x=>menus[x.dataset.mname].name=x.value.trim()||'メニュー');document.querySelectorAll('[data-mbase]').forEach(x=>menus[x.dataset.mbase].baseMinutes=Math.max(5,+x.value||60));document.querySelectorAll('[data-sname]').forEach(x=>staff[x.dataset.sname].name=x.value.trim()||'スタイリスト');document.querySelectorAll('[data-gap]').forEach(x=>staff[x.dataset.gap].intervalMinutes=Math.max(0,+x.value||0));document.querySelectorAll('[data-ext]').forEach(x=>staff[x.dataset.ext].extensionMinutes=Math.max(0,+x.value||0));document.querySelectorAll('[data-work]').forEach(x=>{const [sid,d]=x.dataset.work.split(':');staff[sid].weekly[d].off=!x.checked});document.querySelectorAll('[data-start]').forEach(x=>{const [sid,d]=x.dataset.start.split(':');staff[sid].weekly[d].start=x.value});document.querySelectorAll('[data-end]').forEach(x=>{const [sid,d]=x.dataset.end.split(':');staff[sid].weekly[d].end=x.value});document.querySelectorAll('[data-enabled]').forEach(x=>{const [sid,mid]=x.dataset.enabled.split(':');staff[sid].services??={};staff[sid].services[mid]??={};staff[sid].services[mid].enabled=x.checked});document.querySelectorAll('[data-sminutes]').forEach(x=>{const [sid,mid]=x.dataset.sminutes.split(':');staff[sid].services??={};staff[sid].services[mid]??={};staff[sid].services[mid].minutes=Math.max(5,+x.value||menus[mid]?.baseMinutes||60)});settings={shopName:shopName.value.trim()||'美容室',slotStep:+slotStep.value||10,maxBookingDays:Math.max(1,+maxDays.value||90),sameDay:sameDay.value==='true',cutoffMinutes:Math.max(0,+cutoff.value||0),closedDays:[...closedDays.querySelectorAll('input:checked')].map(x=>Number(x.value))};await Promise.all([set(ref(db,`shops/${shop}/settings`),settings),set(ref(db,`shops/${shop}/menus`),menus),set(ref(db,`shops/${shop}/staff`),staff)]);msg.textContent='保存しました。お客様予約画面にも反映されます。';}catch(err){console.error(err);msg.textContent='保存エラー：'+(err.code||err.message||err);}};
+
+async function load(){
+  const [a,b,c]=await Promise.all([
+    get(ref(db,`shops/${shop}/settings`)),
+    get(ref(db,`shops/${shop}/menus`)),
+    get(ref(db,`shops/${shop}/staff`))
+  ]);
+  settings=a.val()||{shopName:'美容室',slotStep:10,maxBookingDays:90,sameDay:true,cutoffMinutes:60,closedDays:[]};
+  menus=b.val()||{};
+  staff=c.val()||{};
+  shopName.value=settings.shopName||'';
+  slotStep.value=String(settings.slotStep||10);
+  maxDays.value=settings.maxBookingDays||90;
+  sameDay.value=String(settings.sameDay!==false);
+  cutoff.value=settings.cutoffMinutes||0;
+  if(closedDays) closedDays.querySelectorAll('input[type="checkbox"]').forEach(x=>x.checked=(settings.closedDays||[]).includes(Number(x.value)));
+  const u=new URL('reserve.html', location.href);
+  u.searchParams.set('shop',shop);
+  if(customerUrl) customerUrl.value=u.href;
+  if(customerQr) customerQr.src='https://api.qrserver.com/v1/create-qr-code/?size=180x180&data='+encodeURIComponent(u.href);
+  render();
+}
+function render(){
+ menuList.innerHTML='';
+ Object.entries(menus).forEach(([id,m])=>{
+  const d=document.createElement('div');d.className='item';d.innerHTML=`<div class="row"><div><label>メニュー名</label><input data-mname="${id}" value="${m.name||''}"></div><div><label>基本施術時間（分）</label><input data-mbase="${id}" type="number" min="5" value="${m.baseMinutes||60}"></div><div style="flex:.4"><button type="button" class="danger" data-md="${id}">削除</button></div></div>`;menuList.append(d);
+ });
+ staffList.innerHTML='';
+ Object.entries(staff).forEach(([sid,s])=>{
+  const d=document.createElement('div');d.className='item';
+  const services=Object.entries(menus).map(([mid,m])=>{const sv=s.services?.[mid]||{enabled:false,minutes:m.baseMinutes||60};return `<div class="row"><label style="flex:2"><input style="width:auto" type="checkbox" data-enabled="${sid}:${mid}" ${sv.enabled?'checked':''}> ${m.name}</label><div><input type="number" min="5" data-sminutes="${sid}:${mid}" value="${sv.minutes||m.baseMinutes||60}"></div><div class="small">分</div></div>`}).join('');
+  const weekly=days.map((x,i)=>{const w=s.weekly?.[i]||{off:i===0,start:'09:00',end:'19:00'};return `<tr><td>${x}</td><td><input style="width:auto" type="checkbox" data-work="${sid}:${i}" ${!w.off?'checked':''}></td><td><input type="time" data-start="${sid}:${i}" value="${w.start||'09:00'}"></td><td><input type="time" data-end="${sid}:${i}" value="${w.end||'19:00'}"></td></tr>`}).join('');
+  d.innerHTML=`<div class="row"><div><label>スタイリスト名</label><input data-sname="${sid}" value="${s.name||''}"></div><div><label>インターバル（分）</label><input data-gap="${sid}" type="number" min="0" value="${s.intervalMinutes||0}"></div><div><label>退勤後の延長許容（分）</label><input data-ext="${sid}" type="number" min="0" value="${s.extensionMinutes||0}"></div><div style="flex:.4"><button type="button" class="danger" data-sd="${sid}">削除</button></div></div><h3>対応メニュー・施術時間</h3>${services}<h3 style="margin-top:16px">通常勤務</h3><table><tr><th>曜日</th><th>出勤</th><th>開始</th><th>終了</th></tr>${weekly}</table>`;staffList.append(d);
+ });
+}
+addMenu.onclick=()=>{menus[newId()]={name:'新規メニュー',baseMinutes:60};render()};
+addStaff.onclick=()=>{const weekly={};for(let i=0;i<7;i++)weekly[i]={off:i===0,start:'09:00',end:'19:00'};staff[newId()]={name:'スタイリスト',intervalMinutes:10,extensionMinutes:0,weekly,services:{}};render()};
+document.addEventListener('click',e=>{if(e.target.dataset.md){delete menus[e.target.dataset.md];render()}if(e.target.dataset.sd){delete staff[e.target.dataset.sd];render()}});
+saveAll.onclick=async()=>{
+ document.querySelectorAll('[data-mname]').forEach(x=>menus[x.dataset.mname].name=x.value.trim()); document.querySelectorAll('[data-mbase]').forEach(x=>menus[x.dataset.mbase].baseMinutes=+x.value||60);
+ document.querySelectorAll('[data-sname]').forEach(x=>staff[x.dataset.sname].name=x.value.trim());document.querySelectorAll('[data-gap]').forEach(x=>staff[x.dataset.gap].intervalMinutes=+x.value||0);document.querySelectorAll('[data-ext]').forEach(x=>staff[x.dataset.ext].extensionMinutes=+x.value||0);
+ document.querySelectorAll('[data-work]').forEach(x=>{const [s,d]=x.dataset.work.split(':');staff[s].weekly[d].off=!x.checked});document.querySelectorAll('[data-start]').forEach(x=>{const [s,d]=x.dataset.start.split(':');staff[s].weekly[d].start=x.value});document.querySelectorAll('[data-end]').forEach(x=>{const [s,d]=x.dataset.end.split(':');staff[s].weekly[d].end=x.value});
+ document.querySelectorAll('[data-enabled]').forEach(x=>{const [s,m]=x.dataset.enabled.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].enabled=x.checked});document.querySelectorAll('[data-sminutes]').forEach(x=>{const [s,m]=x.dataset.sminutes.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].minutes=+x.value||menus[m].baseMinutes||60});
+ settings={shopName:shopName.value.trim()||'美容室',slotStep:+slotStep.value||10,maxBookingDays:+maxDays.value||90,sameDay:sameDay.value==='true',cutoffMinutes:+cutoff.value||0,closedDays:[...closedDays.querySelectorAll('input:checked')].map(x=>Number(x.value))};
+ try{
+ await Promise.all([set(ref(db,`shops/${shop}/settings`),settings),set(ref(db,`shops/${shop}/menus`),menus),set(ref(db,`shops/${shop}/staff`),staff)]);
+ msg.textContent='保存しました。';
+}catch(err){console.error(err);msg.textContent='保存エラー：'+(err.message||err);}
+};
 </script></body></html>
