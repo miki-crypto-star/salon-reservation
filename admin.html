@@ -29,6 +29,12 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </section>
 
 <section class="card">
+  <h2>この日の予約一覧</h2>
+  <p class="muted">予約ごとに必ずキャンセルできます。</p>
+  <div id="reservationList"></div>
+</section>
+
+<section class="card">
   <h2>本日の予約表</h2>
   <p class="muted">スタイリストごとに予約と空き時間を表示します。空き時間を押すと「休憩・私用」にできます。</p>
   <div id="board"></div>
@@ -65,6 +71,7 @@ const firebaseConfig = {
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const date=document.getElementById('date'),board=document.getElementById('board'),
+reservationList=document.getElementById('reservationList'),
 logout=document.getElementById('logout'),prev=document.getElementById('prev'),next=document.getElementById('next'),
 oStaff=document.getElementById('oStaff'),oStart=document.getElementById('oStart'),oEnd=document.getElementById('oEnd'),
 oOff=document.getElementById('oOff'),saveOverride=document.getElementById('saveOverride'),
@@ -125,6 +132,33 @@ async function render(){
  ]);
  const reservations=rSnap.val()||{}, blocks=bSnap.val()||{}, overrides=oSnap.val()||{};
  board.innerHTML='';
+ reservationList.innerHTML='';
+
+ const activeReservations=Object.entries(reservations)
+   .filter(([id,x])=>x.status!=='cancelled')
+   .sort((a,b)=>(a[1].start||0)-(b[1].start||0));
+
+ if(activeReservations.length===0){
+   reservationList.innerHTML='<p class="muted">予約はありません。</p>';
+ }else{
+   for(const [id,x] of activeReservations){
+     const sname=staff[x.staffId]?.name||'担当未設定';
+     const menuNames=Object.values(x.menus||{}).map(v=>v.name).filter(Boolean).join('＋');
+     const row=document.createElement('div');
+     row.className='item';
+     row.innerHTML=`
+       <div class="row">
+         <div>
+           <b>${fmt(Number(x.start||0))}〜${fmt(Number(x.end||0))}</b><br>
+           ${x.name||'お名前なし'}　／　${sname}${menuNames?`　／　${menuNames}`:''}
+         </div>
+         <div style="flex:0 0 auto">
+           <button type="button" class="danger" data-cancel="${id}" data-sid="${x.staffId||''}">キャンセル</button>
+         </div>
+       </div>`;
+     reservationList.append(row);
+   }
+ }
 
  for(const [sid,s] of Object.entries(staff)){
    const box=document.createElement('div');box.className='item';
@@ -142,42 +176,97 @@ async function render(){
       .sort((a,b)=>a[1].start-b[1].start);
    const bs=Object.entries(blocks[sid]||{}).sort((a,b)=>a[1].start-b[1].start);
 
-   // Timeline in 30-minute rows. Existing bookings/blocks are shown; empty rows can create a block.
+   // 実際の時刻で予約表を作る。30分刻みには丸めない。
+   // 予約・予定ブロック・インターバルを時系列に並べ、残りを空きとして表示する。
+   let items=[];
+
+   for(const [id,x] of rs){
+     const interval=Number(s.intervalMinutes||s.interval||0);
+     items.push({
+       type:'reservation',
+       id,
+       start:Number(x.start),
+       end:Number(x.end),
+       intervalEnd:Number(x.end)+interval,
+       data:x
+     });
+   }
+
+   for(const [id,x] of bs){
+     items.push({
+       type:'block',
+       id,
+       start:Number(x.start),
+       end:Number(x.end),
+       intervalEnd:Number(x.end),
+       data:x
+     });
+   }
+
+   items.sort((a,b)=>a.start-b.start);
+
    let html=`<table><tr><th>時間</th><th>内容</th></tr>`;
-   const shownBookings=new Set();
-   const shownBlocks=new Set();
+   let cursor=start;
 
-   for(let m=start;m<end;m+=30){
-     // 30分表示と、5/10/15分刻みの予約開始時刻がズレても拾えるよう
-     // 「この30分枠と時間帯が重なっているか」で判定する。
-     const booking=rs.find(([id,x])=>m < x.end && (m+30) > x.start);
-     const block=bs.find(([id,x])=>m < x.end && (m+30) > x.start);
+   for(const item of items){
+     if(item.end<=start || item.start>=end) continue;
 
-     if(booking){
-       const [id,x]=booking;
-       const first=!shownBookings.has(id);
-       if(first) shownBookings.add(id);
+     const itemStart=Math.max(start,item.start);
+     const itemEnd=Math.min(end,item.end);
 
+     // 予約・ブロック前の空き時間
+     if(itemStart>cursor){
+       html+=`<tr>
+         <td>${fmt(cursor)}〜${fmt(itemStart)}</td>
+         <td><button type="button" class="secondary" data-free-start="${cursor}" data-free-end="${itemStart}" data-sid="${sid}">
+           空き　→ 休憩・私用にする
+         </button></td>
+       </tr>`;
+     }
+
+     if(item.type==='reservation'){
+       const x=item.data;
        const menuNames=Object.values(x.menus||{}).map(v=>v.name).filter(Boolean).join('＋');
-       const actualTime=`${fmt(x.start)}〜${fmt(x.end)}`;
+       html+=`<tr>
+         <td>${fmt(itemStart)}〜${fmt(itemEnd)}</td>
+         <td>
+           <b>${x.name||'予約'}</b>${menuNames?`　${menuNames}`:''}
+           <button class="danger" data-cancel="${item.id}" data-sid="${sid}" style="float:right">キャンセル</button>
+         </td>
+       </tr>`;
 
-       html+=`<tr><td>${fmt(m)}</td><td>${first
-         ? `<b>${x.name||'予約'}</b>　${actualTime}${menuNames?`　${menuNames}`:''}
-            <button class="danger" data-cancel="${id}" data-sid="${sid}" style="float:right">キャンセル</button>`
-         : '予約中'}</td></tr>`;
-     }else if(block){
-       const [id,x]=block;
-       const first=!shownBlocks.has(id);
-       if(first) shownBlocks.add(id);
-
-       html+=`<tr><td>${fmt(m)}</td><td>${first
-         ? `<b>${x.title||'休憩・私用'}</b>　${fmt(x.start)}〜${fmt(x.end)}
-            <button class="danger" data-delblock="${id}" data-sid="${sid}" style="float:right">解除</button>`
-         : '予定ブロック'}</td></tr>`;
+       // インターバルは予約終了後に別行で表示
+       const intEnd=Math.min(end,item.intervalEnd);
+       if(intEnd>itemEnd){
+         html+=`<tr>
+           <td>${fmt(itemEnd)}〜${fmt(intEnd)}</td>
+           <td>インターバル</td>
+         </tr>`;
+       }
+       cursor=Math.max(cursor,intEnd);
      }else{
-       html+=`<tr><td>${fmt(m)}</td><td><button type="button" class="secondary" data-free="${m}" data-sid="${sid}">空き　→ 休憩・私用にする</button></td></tr>`;
+       const x=item.data;
+       html+=`<tr>
+         <td>${fmt(itemStart)}〜${fmt(itemEnd)}</td>
+         <td>
+           <b>${x.title||'休憩・私用'}</b>
+           <button class="danger" data-delblock="${item.id}" data-sid="${sid}" style="float:right">解除</button>
+         </td>
+       </tr>`;
+       cursor=Math.max(cursor,itemEnd);
      }
    }
+
+   // 最後の空き時間
+   if(cursor<end){
+     html+=`<tr>
+       <td>${fmt(cursor)}〜${fmt(end)}</td>
+       <td><button type="button" class="secondary" data-free-start="${cursor}" data-free-end="${end}" data-sid="${sid}">
+         空き　→ 休憩・私用にする
+       </button></td>
+     </tr>`;
+   }
+
    html+='</table>';
    box.insertAdjacentHTML('beforeend',html);
    board.append(box);
@@ -204,13 +293,20 @@ oStaff.onchange=async()=>{
     };
 
 document.addEventListener('click',async e=>{
- if(e.target.dataset.free){
-   const sid=e.target.dataset.sid,start=+e.target.dataset.free;
-   const mins=prompt('何分ブロックしますか？','30');
+ if(e.target.dataset.freeStart){
+   const sid=e.target.dataset.sid;
+   const start=+e.target.dataset.freeStart;
+   const freeEnd=+e.target.dataset.freeEnd;
+   const maxMinutes=Math.max(5,freeEnd-start);
+   const mins=prompt(`何分ブロックしますか？（最大${maxMinutes}分）`,String(Math.min(30,maxMinutes)));
    if(!mins)return;
-   const dur=Math.max(5,+mins||30);
+   const dur=Math.max(5,Math.min(maxMinutes,Math.round((+mins||30)/5)*5));
    const title=prompt('内容（例：休憩、私用）','休憩')||'休憩';
-   await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`)),{start,end:start+dur,title});
+   await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`)),{
+     start,
+     end:start+dur,
+     title
+   });
    await render();
  }
  if(e.target.dataset.delblock){
@@ -218,13 +314,32 @@ document.addEventListener('click',async e=>{
    await render();
  }
  if(e.target.dataset.cancel){
-   const id=e.target.dataset.cancel,sid=e.target.dataset.sid;
-   await update(ref(db,`shops/${shop}/reservations/${date.value}/${id}`),{status:'cancelled'});
-   // release any lock values owned by this booking id
-   await runTransaction(ref(db,`shops/${shop}/locks/${date.value}/${sid}`),cur=>{
-     if(!cur)return cur;for(const [k,v] of Object.entries(cur))if(v===id)delete cur[k];return cur;
-   });
-   await render();
+   const id=e.target.dataset.cancel;
+   const sid=e.target.dataset.sid;
+   if(!confirm('この予約をキャンセルしますか？')) return;
+   try{
+     await update(ref(db,`shops/${shop}/reservations/${date.value}/${id}`),{
+       status:'cancelled',
+       cancelledAt:Date.now()
+     });
+
+     if(sid){
+       await runTransaction(ref(db,`shops/${shop}/locks/${date.value}/${sid}`),cur=>{
+         if(!cur)return cur;
+         for(const [k,v] of Object.entries(cur)){
+           const lockBid=typeof v==='string'?v:v?.bid;
+           if(lockBid===id) delete cur[k];
+         }
+         return cur;
+       });
+     }
+
+     msg.textContent='予約をキャンセルしました。';
+     await render();
+   }catch(err){
+     console.error(err);
+     msg.textContent='キャンセルできませんでした：'+(err.code||err.message||err);
+   }
  }
 });
 

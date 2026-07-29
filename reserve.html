@@ -45,16 +45,167 @@ const [ss,ms,st]=await Promise.all([
 ]);
 settings=ss.val()||{};menus=ms.val()||{};staff=st.val()||{};
 if(!ss.exists()){msg.textContent='店舗設定がありません。';throw new Error('shop not found');}title.textContent=settings.shopName||'美容室予約';
-Object.entries(menus).forEach(([id,m])=>menuList.insertAdjacentHTML('beforeend',`<label class="item"><input style="width:auto" type="checkbox" value="${id}"> ${m.name} <span class="muted">基本 ${m.baseMinutes||0}分</span></label>`));
+Object.entries(menus).forEach(([id,m])=>menuList.insertAdjacentHTML('beforeend',`<label class="item"><input style="width:auto" type="checkbox" value="${id}"> ${m.name}</label>`));
 Object.entries(staff).forEach(([id,s])=>staffSel.add(new Option(s.name,id)));
 menuList.onchange=()=>{selectedMenus=[...menuList.querySelectorAll('input:checked')].map(x=>x.value);renderDates()};staffSel.onchange=renderDates;
 function eligible(sid){return selectedMenus.length>0&&selectedMenus.every(mid=>staff[sid]?.services?.[mid]?.enabled)}
 function duration(sid){return selectedMenus.reduce((n,mid)=>n+(+staff[sid].services[mid].minutes||0),0)}
 function daySchedule(sid,dateObj,overrides){const w=overrides?.[sid]||staff[sid]?.weekly?.[dateObj.getDay()];if(!w||w.off)return null;return w}
 function renderDates(){dates.innerHTML='';slots.innerHTML='';selectedChoice=null;if(!selectedMenus.length)return;let ids=Object.keys(staff).filter(eligible);if(staffSel.value!=='any')ids=ids.filter(x=>x===staffSel.value);if(!ids.length){dates.textContent='このメニューに対応できるスタイリストがいません。';return}const today=new Date();today.setHours(0,0,0,0);const first=settings.sameDay===false?1:0,max=+settings.maxBookingDays||90;for(let i=first;i<=max;i++){const d=new Date(today);d.setDate(d.getDate()+i);if((settings.closedDays||[]).includes(d.getDay()))continue;const b=document.createElement('button');b.type='button';b.className='choice';b.textContent=`${d.getMonth()+1}/${d.getDate()}`;b.onclick=async()=>{[...dates.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedDate=dkey(d);await renderSlots(d)};dates.append(b)}}
-async function renderSlots(d){slots.textContent='読み込み中...';selectedChoice=null;const date=dkey(d);const [lockSnap,blockSnap,ovSnap]=await Promise.all([get(ref(db,`shops/${shop}/locks/${date}`)),get(ref(db,`shops/${shop}/blocks/${date}`)),get(ref(db,`shops/${shop}/workOverrides/${date}`))]);const locks=lockSnap.val()||{},blocks=blockSnap.val()||{},overrides=ovSnap.val()||{};let ids=Object.keys(staff).filter(eligible);if(staffSel.value!=='any')ids=ids.filter(x=>x===staffSel.value);const byTime=new Map(),now=new Date(),step=+settings.slotStep||10;for(const sid of ids){const w=daySchedule(sid,d,overrides);if(!w)continue;const baseStart=tmin(w.start),baseEnd=tmin(w.end),limit=baseEnd+(+staff[sid].extensionMinutes||0),dur=duration(sid),gap=+staff[sid].intervalMinutes||0;for(let start=baseStart;start+dur<=limit;start+=step){const startDt=new Date(d.getFullYear(),d.getMonth(),d.getDate(),Math.floor(start/60),start%60);if(startDt.getTime()-now.getTime() < (+settings.cutoffMinutes||0)*60000)continue;const end=start+dur;let bad=false;for(const k of lockKeys(start,end+gap))if(locks?.[sid]?.[k]){bad=true;break}if(!bad)for(const b of Object.values(blocks?.[sid]||{}))if(start<+b.end&&end>+b.start){bad=true;break}if(!bad){const key=fmt(start);if(!byTime.has(key))byTime.set(key,[]);byTime.get(key).push({sid,start,end,gap})}}}slots.innerHTML='';[...byTime.entries()].sort((a,b)=>a[0].localeCompare(b[0])).forEach(([time,arr])=>{const b=document.createElement('button');b.type='button';b.className='choice';b.textContent=time;b.onclick=()=>{[...slots.children].forEach(x=>x.classList.remove('active'));b.classList.add('active');selectedChoice=arr[0]};slots.append(b)});if(!slots.children.length)slots.textContent='この日は予約可能な時間がありません。'}
-async function acquire(date,sid,start,end,gap,bid){const rr=ref(db,`shops/${shop}/locks/${date}/${sid}`),need=lockKeys(start,end+gap);let ok=false;const tx=await runTransaction(rr,c=>{c=c||{};if(need.some(k=>c[k]))return;for(const k of need)c[k]=bid;ok=true;return c});return ok&&tx.committed}
-async function release(date,sid,bid){await runTransaction(ref(db,`shops/${shop}/locks/${date}/${sid}`),c=>{if(!c)return c;for(const[k,v]of Object.entries(c))if(v===bid)delete c[k];return c})}
+async function renderSlots(d){
+ slots.textContent='読み込み中...';
+ selectedChoice=null;
+ const date=dkey(d);
+
+ const [resSnap,blockSnap,ovSnap]=await Promise.all([
+   get(ref(db,`shops/${shop}/reservations/${date}`)),
+   get(ref(db,`shops/${shop}/blocks/${date}`)),
+   get(ref(db,`shops/${shop}/workOverrides/${date}`))
+ ]);
+
+ const reservations=resSnap.val()||{};
+ const blocks=blockSnap.val()||{};
+ const overrides=ovSnap.val()||{};
+
+ let ids=Object.keys(staff).filter(eligible);
+ if(staffSel.value!=='any') ids=ids.filter(x=>x===staffSel.value);
+
+ const byTime=new Map();
+ const now=new Date();
+ const step=+settings.slotStep||10;
+
+ for(const sid of ids){
+   const w=daySchedule(sid,d,overrides);
+   if(!w) continue;
+
+   const baseStart=tmin(w.start);
+   const baseEnd=tmin(w.end);
+   const limit=baseEnd+(+staff[sid].extensionMinutes||0);
+   const dur=duration(sid);
+   const gap=+staff[sid].intervalMinutes||0;
+
+   // This stylist's confirmed active reservations are the source of truth.
+   const activeReservations=Object.values(reservations).filter(r=>
+     r &&
+     r.staffId===sid &&
+     r.status!=='cancelled' &&
+     Number.isFinite(+r.start) &&
+     Number.isFinite(+r.end)
+   );
+
+   for(let start=baseStart;start+dur<=limit;start+=step){
+     const startDt=new Date(
+       d.getFullYear(),d.getMonth(),d.getDate(),
+       Math.floor(start/60),start%60
+     );
+
+     if(startDt.getTime()-now.getTime() < (+settings.cutoffMinutes||0)*60000) continue;
+
+     const end=start+dur;
+     const occupiedEnd=end+gap;
+     let bad=false;
+
+     // Existing reservation: include that reservation's own post-service interval.
+     for(const r of activeReservations){
+       const existingGap=+staff[sid].intervalMinutes||0;
+       const rStart=+r.start;
+       const rEnd=+r.end+existingGap;
+       if(start<rEnd && occupiedEnd>rStart){
+         bad=true;
+         break;
+       }
+     }
+
+     // Break/private block.
+     if(!bad){
+       for(const b of Object.values(blocks?.[sid]||{})){
+         if(start<+b.end && end>+b.start){
+           bad=true;
+           break;
+         }
+       }
+     }
+
+     if(!bad){
+       const key=fmt(start);
+       if(!byTime.has(key)) byTime.set(key,[]);
+       byTime.get(key).push({sid,start,end,gap});
+     }
+   }
+ }
+
+ slots.innerHTML='';
+ [...byTime.entries()]
+   .sort((a,b)=>a[0].localeCompare(b[0]))
+   .forEach(([time,arr])=>{
+     const b=document.createElement('button');
+     b.type='button';
+     b.className='choice';
+     b.textContent=time;
+     b.onclick=()=>{
+       [...slots.children].forEach(x=>x.classList.remove('active'));
+       b.classList.add('active');
+       selectedChoice=arr[0];
+     };
+     slots.append(b);
+   });
+
+ if(!slots.children.length){
+   slots.textContent='この日は予約可能な時間がありません。';
+ }
+}
+
+async function acquire(date,sid,start,end,gap,bid){
+ const rr=ref(db,`shops/${shop}/locks/${date}/${sid}`);
+ const need=lockKeys(start,end+gap);
+
+ // Read active reservations immediately before locking.
+ // This lets us distinguish real locks from legacy orphaned locks.
+ const resSnap=await get(ref(db,`shops/${shop}/reservations/${date}`));
+ const reservations=resSnap.val()||{};
+ const activeIds=new Set(
+   Object.entries(reservations)
+     .filter(([id,r])=>r && r.status!=='cancelled')
+     .map(([id])=>id)
+ );
+
+ const now=Date.now();
+ const PENDING_TTL=120000; // 2 minutes
+ let ok=false;
+
+ const tx=await runTransaction(rr,c=>{
+   c=c||{};
+
+   // Clean only stale/orphaned locks.
+   for(const [k,v] of Object.entries(c)){
+     if(typeof v==='string'){
+       // Legacy lock: keep only when its reservation still exists and is active.
+       if(!activeIds.has(v)) delete c[k];
+     }else if(v && typeof v==='object'){
+       const lockBid=v.bid;
+       const createdAt=+v.createdAt||0;
+       const confirmed=lockBid && activeIds.has(lockBid);
+       const stillPending=createdAt && (now-createdAt)<PENDING_TTL;
+       if(!confirmed && !stillPending) delete c[k];
+     }else{
+       delete c[k];
+     }
+   }
+
+   // Anything still occupying one of the required 5-minute keys blocks the booking.
+   if(need.some(k=>c[k])) return;
+
+   for(const k of need){
+     c[k]={bid,createdAt:now};
+   }
+   ok=true;
+   return c;
+ });
+
+ return ok&&tx.committed;
+}
+
+async function release(date,sid,bid){await runTransaction(ref(db,`shops/${shop}/locks/${date}/${sid}`),c=>{if(!c)return c;for(const[k,v]of Object.entries(c)){const lockBid=typeof v==='string'?v:v?.bid;if(lockBid===bid)delete c[k]}return c})}
 form.onsubmit=async e=>{e.preventDefault();msg.textContent='';if(!selectedDate||!selectedChoice){msg.textContent='日時を選択してください。';return}const sid=selectedChoice.sid,s=staff[sid],bid=push(ref(db,`shops/${shop}/reservations/${selectedDate}`)).key;const ok=await acquire(selectedDate,sid,selectedChoice.start,selectedChoice.end,selectedChoice.gap,bid);if(!ok){msg.textContent='申し訳ありません。直前に別の予約が入りました。時間を選び直してください。';return}const rec={staffId:sid,staffName:s.name,start:selectedChoice.start,end:selectedChoice.end,menus:selectedMenus.reduce((o,mid)=>(o[mid]={name:menus[mid].name,minutes:+s.services[mid].minutes||0},o),{}),name:custName.value.trim(),phone:phone.value.trim(),note:note.value.trim(),status:'reserved',source:'web',createdAt:Date.now()};try{await set(ref(db,`shops/${shop}/reservations/${selectedDate}/${bid}`),rec)}catch(err){await release(selectedDate,sid,bid);msg.textContent='予約保存に失敗しました。';return}document.querySelectorAll('main > section, main > form').forEach(x=>x.classList.add('hidden'));done.classList.remove('hidden');doneTime.textContent=`${selectedDate} ${fmt(rec.start)}から`;doneInfo.textContent=`担当：${s.name} / ${selectedMenus.map(mid=>menus[mid].name).join('＋')}`;calendarBtn.onclick=()=>downloadICS(rec,selectedDate)};
 function downloadICS(rec,date){const [y,m,d]=date.split('-').map(Number),pad=n=>String(n).padStart(2,'0'),dt=n=>`${y}${pad(m)}${pad(d)}T${pad(Math.floor(n/60))}${pad(n%60)}00`;const title=`${settings.shopName||'美容室'} 予約`,desc=`担当：${rec.staffName} / ${Object.values(rec.menus).map(x=>x.name).join('＋')}`;const ics=`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${dt(rec.start)}\nDTEND:${dt(rec.end)}\nSUMMARY:${title}\nDESCRIPTION:${desc}\nEND:VEVENT\nEND:VCALENDAR`;const blob=new Blob([ics],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='salon-reservation.ics';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 </script></body></html>
