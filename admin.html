@@ -35,6 +35,22 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 </section>
 
 <section class="card">
+  <h2>休憩・私用を入れる</h2>
+  <p class="muted">開始時間と終了時間を指定して、その時間を予約不可にします。</p>
+  <div class="grid3">
+    <div><label>スタイリスト</label><select id="blockStaff"></select></div>
+    <div><label>開始</label><input id="blockStart" type="time" step="300"></div>
+    <div><label>終了</label><input id="blockEnd" type="time" step="300"></div>
+  </div>
+  <div>
+    <label>内容</label>
+    <input id="blockTitle" type="text" placeholder="休憩・私用など" value="休憩">
+  </div>
+  <button id="addBlock" type="button" style="margin-top:10px">予定を追加</button>
+  <div id="blockMsg" class="message" style="margin-top:10px"></div>
+</section>
+
+<section class="card">
   <h2>本日の予約表</h2>
   <p class="muted">スタイリストごとに予約と空き時間を表示します。空き時間を押すと「休憩・私用」にできます。</p>
   <div id="board"></div>
@@ -75,7 +91,10 @@ reservationList=document.getElementById('reservationList'),
 logout=document.getElementById('logout'),prev=document.getElementById('prev'),next=document.getElementById('next'),
 oStaff=document.getElementById('oStaff'),oStart=document.getElementById('oStart'),oEnd=document.getElementById('oEnd'),
 oOff=document.getElementById('oOff'),saveOverride=document.getElementById('saveOverride'),
-clearOverride=document.getElementById('clearOverride'),msg=document.getElementById('msg');
+clearOverride=document.getElementById('clearOverride'),msg=document.getElementById('msg'),
+blockStaff=document.getElementById('blockStaff'),blockStart=document.getElementById('blockStart'),
+blockEnd=document.getElementById('blockEnd'),blockTitle=document.getElementById('blockTitle'),
+addBlock=document.getElementById('addBlock'),blockMsg=document.getElementById('blockMsg');
 
 let shop='',menus={},staff={},settings={};
 const fmt=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
@@ -102,7 +121,11 @@ onAuthStateChanged(auth,async u=>{
  ]);
  menus=ms.val()||{};staff=st.val()||{};settings=ss.val()||{};
  oStaff.innerHTML='';
- for(const [id,s] of Object.entries(staff)) oStaff.add(new Option(s.name,id));
+ blockStaff.innerHTML='';
+ for(const [id,s] of Object.entries(staff)){
+   oStaff.add(new Option(s.name,id));
+   blockStaff.add(new Option(s.name,id));
+ }
  await render();
 });
 
@@ -253,9 +276,7 @@ async function render(){
      if(itemStart>cursor){
        html+=`<tr>
          <td>${fmt(cursor)}〜${fmt(itemStart)}</td>
-         <td><button type="button" class="secondary" data-free-start="${cursor}" data-free-end="${itemStart}" data-sid="${sid}">
-           空き　→ 休憩・私用にする
-         </button></td>
+         <td>空き</td>
        </tr>`;
      }
 
@@ -296,9 +317,7 @@ async function render(){
    if(cursor<end){
      html+=`<tr>
        <td>${fmt(cursor)}〜${fmt(end)}</td>
-       <td><button type="button" class="secondary" data-free-start="${cursor}" data-free-end="${end}" data-sid="${sid}">
-         空き　→ 休憩・私用にする
-       </button></td>
+       <td>空き</td>
      </tr>`;
    }
 
@@ -328,22 +347,7 @@ oStaff.onchange=async()=>{
     };
 
 document.addEventListener('click',async e=>{
- if(e.target.dataset.freeStart){
-   const sid=e.target.dataset.sid;
-   const start=+e.target.dataset.freeStart;
-   const freeEnd=+e.target.dataset.freeEnd;
-   const maxMinutes=Math.max(5,freeEnd-start);
-   const mins=prompt(`何分ブロックしますか？（最大${maxMinutes}分）`,String(Math.min(30,maxMinutes)));
-   if(!mins)return;
-   const dur=Math.max(5,Math.min(maxMinutes,Math.round((+mins||30)/5)*5));
-   const title=prompt('内容（例：休憩、私用）','休憩')||'休憩';
-   await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`)),{
-     start,
-     end:start+dur,
-     title
-   });
-   await render();
- }
+
  if(e.target.dataset.delblock){
    await remove(ref(db,`shops/${shop}/blocks/${date.value}/${e.target.dataset.sid}/${e.target.dataset.delblock}`));
    await render();
@@ -377,6 +381,71 @@ document.addEventListener('click',async e=>{
    }
  }
 });
+
+
+addBlock.onclick=async()=>{
+ if(!blockStaff.value){
+   blockMsg.textContent='スタイリストを選んでください。';
+   return;
+ }
+ if(!blockStart.value || !blockEnd.value){
+   blockMsg.textContent='開始時間と終了時間を入力してください。';
+   return;
+ }
+
+ const sid=blockStaff.value;
+ const start=tmin(time5(blockStart.value));
+ const end=tmin(time5(blockEnd.value));
+
+ if(end<=start){
+   blockMsg.textContent='終了時間は開始時間より後にしてください。';
+   return;
+ }
+
+ try{
+   const [rSnap,bSnap]=await Promise.all([
+     get(ref(db,`shops/${shop}/reservations/${date.value}`)),
+     get(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`))
+   ]);
+
+   const reservations=rSnap.val()||{};
+   const existingBlocks=bSnap.val()||{};
+
+   const overlapsReservation=Object.values(reservations).some(r=>
+     r &&
+     r.staffId===sid &&
+     r.status!=='cancelled' &&
+     start<+r.end &&
+     end>+r.start
+   );
+
+   if(overlapsReservation){
+     blockMsg.textContent='予約が入っているため、この時間には設定できません。';
+     return;
+   }
+
+   const overlapsBlock=Object.values(existingBlocks).some(b=>
+     b && start<+b.end && end>+b.start
+   );
+
+   if(overlapsBlock){
+     blockMsg.textContent='すでに休憩・私用が入っている時間と重なっています。';
+     return;
+   }
+
+   await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`)),{
+     start,
+     end,
+     title:(blockTitle.value||'休憩').trim()||'休憩'
+   });
+
+   blockMsg.textContent=`${fmt(start)}〜${fmt(end)} を予約不可にしました。`;
+   await render();
+ }catch(err){
+   console.error(err);
+   blockMsg.textContent='予定を追加できませんでした：'+(err.code||err.message||err);
+ }
+};
 
 saveOverride.onclick=async()=>{
  if(!oStaff.value){msg.textContent='スタイリストを選んでください。';return;}
