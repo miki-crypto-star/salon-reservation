@@ -11,13 +11,46 @@ button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);
 .pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
 table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}
 @media(max-width:760px){main{padding:12px}.grid2,.grid3,.grid4{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
-</style></head><body><header><h1>予約管理</h1></header><main><nav><a class="btn secondary" href="settings.html">設定</a><button id="logout" class="secondary">ログアウト</button></nav>
-<section class="card"><div class="row"><button id="prev" class="secondary">前日</button><input id="date" type="date"><button id="next" class="secondary">翌日</button></div></section><section class="card"><h2 id="heading"></h2><div id="board"></div></section>
-<section id="editBox" class="card hidden"><h2>予約変更</h2><div class="grid2"><div><label>担当</label><select id="eStaff"></select></div><div><label>開始時間</label><input id="eStart" type="time"></div></div><br><div class="row"><button id="saveEdit">変更を保存</button><button id="cancelEdit" class="secondary">閉じる</button></div><div id="editMsg" class="message"></div></section>
-<section class="card"><h2>電話・LINE・店頭予約</h2><div class="grid3"><div><label>担当</label><select id="aStaff"></select></div><div><label>開始</label><input id="aStart" type="time"></div><div><label>お名前</label><input id="aName"></div></div><label>メニュー</label><div id="aMenus"></div><label>電話番号</label><input id="aPhone"><label>備考</label><textarea id="aNote"></textarea><br><br><button id="addBooking">予約追加</button><div id="msg" class="message"></div></section>
-<section class="card"><h2>休憩・私用などの予定ブロック</h2><div class="grid3"><div><label>担当</label><select id="bStaff"></select></div><div><label>開始</label><input id="bStart" type="time"></div><div><label>終了</label><input id="bEnd" type="time"></div></div><label>内容</label><input id="bTitle" placeholder="休憩・私用など"><br><br><button id="addBlock">予定を追加</button></section>
-<section class="card"><h2>その日の勤務変更</h2><div class="grid3"><div><label>担当</label><select id="oStaff"></select></div><div><label>出勤</label><input id="oStart" type="time"></div><div><label>退勤</label><input id="oEnd" type="time"></div></div><label><input id="oOff" style="width:auto" type="checkbox"> この日は休み</label><div class="row"><button id="saveOverride">この日の勤務を保存</button><button id="clearOverride" class="secondary">通常勤務に戻す</button></div></section>
-</main><script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
+</style></head>
+<body>
+<header><h1>予約管理</h1></header>
+<main>
+<nav>
+  <a class="btn secondary" href="settings.html">設定</a>
+  <button id="logout" class="secondary">ログアウト</button>
+</nav>
+
+<section class="card">
+  <div class="row">
+    <button id="prev" class="secondary" type="button">前日</button>
+    <input id="date" type="date">
+    <button id="next" class="secondary" type="button">翌日</button>
+  </div>
+</section>
+
+<section class="card">
+  <h2>本日の予約表</h2>
+  <p class="muted">スタイリストごとに予約と空き時間を表示します。空き時間を押すと「休憩・私用」にできます。</p>
+  <div id="board"></div>
+</section>
+
+<section class="card">
+  <h2>その日の予約受付時間を変更</h2>
+  <p class="muted">通常設定と違う日だけ使います。例：この日だけ予約受付を12:00開始、15:00終了にする。</p>
+  <div class="grid3">
+    <div><label>スタイリスト</label><select id="oStaff"></select></div>
+    <div><label>予約受付開始</label><input id="oStart" type="time"></div>
+    <div><label>予約受付終了</label><input id="oEnd" type="time"></div>
+  </div>
+  <label><input id="oOff" style="width:auto" type="checkbox"> この日は予約受付しない</label>
+  <div class="row" style="margin-top:10px">
+    <button id="saveOverride" type="button">この日の予約受付時間を保存</button>
+    <button id="clearOverride" class="secondary" type="button">通常の予約受付時間に戻す</button>
+  </div>
+  <div id="msg" class="message" style="margin-top:12px"></div>
+</section>
+</main>
+<script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
 const firebaseConfig = {
@@ -31,27 +64,175 @@ const firebaseConfig = {
 };
 
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
-const date=document.getElementById('date'),heading=document.getElementById('heading'),board=document.getElementById('board'),
+const date=document.getElementById('date'),board=document.getElementById('board'),
 logout=document.getElementById('logout'),prev=document.getElementById('prev'),next=document.getElementById('next'),
-aStaff=document.getElementById('aStaff'),aStart=document.getElementById('aStart'),aName=document.getElementById('aName'),
-aMenus=document.getElementById('aMenus'),aPhone=document.getElementById('aPhone'),aNote=document.getElementById('aNote'),
-addBooking=document.getElementById('addBooking'),msg=document.getElementById('msg'),bStaff=document.getElementById('bStaff'),
-bStart=document.getElementById('bStart'),bEnd=document.getElementById('bEnd'),bTitle=document.getElementById('bTitle'),
-addBlock=document.getElementById('addBlock'),oStaff=document.getElementById('oStaff'),oStart=document.getElementById('oStart'),
-oEnd=document.getElementById('oEnd'),oOff=document.getElementById('oOff'),saveOverride=document.getElementById('saveOverride'),
-clearOverride=document.getElementById('clearOverride');let shop='',menus={},staff={};
-const fmt=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`,tmin=t=>{const[a,b]=t.split(':').map(Number);return a*60+b},lockKeys=(start,end)=>{const a=[];for(let m=Math.floor(start/5)*5;m<end;m+=5)a.push(String(m));return a};
+oStaff=document.getElementById('oStaff'),oStart=document.getElementById('oStart'),oEnd=document.getElementById('oEnd'),
+oOff=document.getElementById('oOff'),saveOverride=document.getElementById('saveOverride'),
+clearOverride=document.getElementById('clearOverride'),msg=document.getElementById('msg');
+
+let shop='',menus={},staff={},settings={};
+const fmt=n=>`${String(Math.floor(n/60)).padStart(2,'0')}:${String(n%60).padStart(2,'0')}`;
+const tmin=t=>{const[a,b]=t.split(':').map(Number);return a*60+b};
+
 date.value=new Date().toISOString().slice(0,10);
-onAuthStateChanged(auth,async u=>{if(!u){location.href='login.html';return}const s=await get(ref(db,`users/${u.uid}/shopCode`));if(!s.exists()){location.href='login.html';return}shop=s.val();const [ms,st]=await Promise.all([
- get(ref(db,`shops/${shop}/menus`)),
- get(ref(db,`shops/${shop}/staff`))
-]);menus=ms.val()||{};staff=st.val()||{};for(const [id,sf] of Object.entries(staff)){aStaff.add(new Option(sf.name,id));bStaff.add(new Option(sf.name,id));oStaff.add(new Option(sf.name,id));eStaff.add(new Option(sf.name,id))}for(const [id,m] of Object.entries(menus))aMenus.insertAdjacentHTML('beforeend',`<label class="item"><input style="width:auto" type="checkbox" value="${id}"> ${m.name}</label>`);await render()});
-logout.onclick=async()=>{await signOut(auth);localStorage.clear();location.href='login.html'};date.onchange=render;prev.onclick=()=>move(-1);next.onclick=()=>move(1);function move(n){const d=new Date(date.value+'T12:00:00');d.setDate(d.getDate()+n);date.value=d.toISOString().slice(0,10);render()}
-async function render(){if(!shop)return;heading.textContent=date.value;const [rSnap,bSnap,oSnap]=await Promise.all([get(ref(db,`shops/${shop}/reservations/${date.value}`)),get(ref(db,`shops/${shop}/blocks/${date.value}`)),get(ref(db,`shops/${shop}/workOverrides/${date.value}`))]);const reservations=rSnap.val()||{},blocks=bSnap.val()||{},ovs=oSnap.val()||{};board.innerHTML='';for(const [sid,s] of Object.entries(staff)){const box=document.createElement('div');box.className='item staffCol';box.innerHTML=`<h3>${s.name}</h3>`;const rs=Object.entries(reservations).filter(([id,x])=>x.staffId===sid&&x.status!=='cancelled').sort((a,b)=>a[1].start-b[1].start);rs.forEach(([id,x])=>box.insertAdjacentHTML('beforeend',`<div class="item"><b>${fmt(x.start)}〜${fmt(x.end)}　${x.name}</b><br>${Object.values(x.menus||{}).map(m=>m.name).join('＋')} <span class="pill">${x.source==='manual'?'店頭/電話/LINE':'Web'}</span><br><span class="muted">${x.phone||''}</span><div class="row" style="margin-top:8px"><button class="secondary" data-loadedit="${id}">変更</button><button class="danger" data-cancel="${id}" data-sid="${sid}">キャンセル</button></div></div>`));Object.entries(blocks[sid]||{}).sort((a,b)=>a[1].start-b[1].start).forEach(([id,x])=>box.insertAdjacentHTML('beforeend',`<div class="item"><b>${fmt(x.start)}〜${fmt(x.end)}　予定</b> ${x.title||''} <button class="danger" data-delblock="${id}" data-sid="${sid}">削除</button></div>`));if(!rs.length&&!Object.keys(blocks[sid]||{}).length)box.insertAdjacentHTML('beforeend','<p class="muted">予約・予定なし</p>');if(ovs[sid])box.insertAdjacentHTML('beforeend',`<p class="pill">当日勤務：${ovs[sid].off?'休み':`${ovs[sid].start}〜${ovs[sid].end}`}</p>`);board.append(box)}}
-async function acquire(datev,sid,start,end,gap,bid){const rr=ref(db,`shops/${shop}/locks/${datev}/${sid}`),need=lockKeys(start,end+gap);let ok=false;const tx=await runTransaction(rr,c=>{c=c||{};if(need.some(k=>c[k]&&c[k]!==bid))return;for(const k of need)c[k]=bid;ok=true;return c});return ok&&tx.committed}
-async function release(datev,sid,bid){await runTransaction(ref(db,`shops/${shop}/locks/${datev}/${sid}`),c=>{if(!c)return c;for(const[k,v]of Object.entries(c))if(v===bid)delete c[k];return c})}
-addBooking.onclick=async()=>{msg.textContent='';const sid=aStaff.value,selected=[...aMenus.querySelectorAll('input:checked')].map(x=>x.value);if(!sid||!aStart.value||!aName.value.trim()||!selected.length){msg.textContent='担当・開始・名前・メニューを入力してください。';return}if(!selected.every(mid=>staff[sid]?.services?.[mid]?.enabled)){msg.textContent='担当者が対応できないメニューが含まれています。';return}const start=tmin(aStart.value),dur=selected.reduce((n,mid)=>n+(+staff[sid].services[mid].minutes||0),0),end=start+dur,gap=+staff[sid].intervalMinutes||0,id=push(ref(db,`shops/${shop}/reservations/${date.value}`)).key;if(!await acquire(date.value,sid,start,end,gap,id)){msg.textContent='その時間は既存予約と重なります。';return}const rec={staffId:sid,staffName:staff[sid].name,start,end,menus:selected.reduce((o,mid)=>(o[mid]={name:menus[mid].name,minutes:+staff[sid].services[mid].minutes||0},o),{}),name:aName.value.trim(),phone:aPhone.value.trim(),note:aNote.value.trim(),status:'reserved',source:'manual',createdAt:Date.now()};try{await set(ref(db,`shops/${shop}/reservations/${date.value}/${id}`),rec);msg.textContent='予約を追加しました。';render()}catch(err){await release(date.value,sid,id);msg.textContent='保存に失敗しました。'}};
-addBlock.onclick=async()=>{if(!bStart.value||!bEnd.value||tmin(bEnd.value)<=tmin(bStart.value))return;await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${bStaff.value}`)),{start:tmin(bStart.value),end:tmin(bEnd.value),title:bTitle.value.trim()});render()};saveOverride.onclick=async()=>{await set(ref(db,`shops/${shop}/workOverrides/${date.value}/${oStaff.value}`),{off:oOff.checked,start:oStart.value||'09:00',end:oEnd.value||'19:00'});render()};clearOverride.onclick=async()=>{await remove(ref(db,`shops/${shop}/workOverrides/${date.value}/${oStaff.value}`));render()};
-let editingId='';document.addEventListener('click',async e=>{if(e.target.dataset.cancel){const id=e.target.dataset.cancel,sid=e.target.dataset.sid;await update(ref(db,`shops/${shop}/reservations/${date.value}/${id}`),{status:'cancelled'});await release(date.value,sid,id);render()}if(e.target.dataset.delblock){await remove(ref(db,`shops/${shop}/blocks/${date.value}/${e.target.dataset.sid}/${e.target.dataset.delblock}`));render()}if(e.target.dataset.loadedit){editingId=e.target.dataset.loadedit;const snap=await get(ref(db,`shops/${shop}/reservations/${date.value}/${editingId}`));const rec=snap.val();if(!rec)return;eStaff.value=rec.staffId;eStart.value=fmt(rec.start);editBox.classList.remove('hidden')}});
-saveEdit.onclick=async()=>{if(!editingId)return;const rr=ref(db,`shops/${shop}/reservations/${date.value}/${editingId}`),snap=await get(rr),rec=snap.val();if(!rec)return;const newSid=eStaff.value,newStart=tmin(eStart.value),mids=Object.keys(rec.menus||{});if(!mids.every(mid=>staff[newSid]?.services?.[mid]?.enabled)){editMsg.textContent='変更先担当者が対応できないメニューがあります。';return}const dur=mids.reduce((n,mid)=>n+(+staff[newSid].services[mid].minutes||0),0),newEnd=newStart+dur,newGap=+staff[newSid].intervalMinutes||0;await release(date.value,rec.staffId,editingId);const ok=await acquire(date.value,newSid,newStart,newEnd,newGap,editingId);if(!ok){await acquire(date.value,rec.staffId,rec.start,rec.end,+staff[rec.staffId].intervalMinutes||0,editingId);editMsg.textContent='変更先時間は埋まっています。';return}await update(rr,{staffId:newSid,staffName:staff[newSid].name,start:newStart,end:newEnd});editMsg.textContent='変更しました。';editBox.classList.add('hidden');editingId='';render()};cancelEdit.onclick=()=>{editingId='';editBox.classList.add('hidden')};
+
+onAuthStateChanged(auth,async u=>{
+ if(!u){location.href='login.html';return}
+ const sc=await get(ref(db,`users/${u.uid}/shopCode`));
+ if(!sc.exists()){location.href='login.html';return}
+ shop=sc.val();
+ const [ms,st,ss]=await Promise.all([
+   get(ref(db,`shops/${shop}/menus`)),
+   get(ref(db,`shops/${shop}/staff`)),
+   get(ref(db,`shops/${shop}/settings`))
+ ]);
+ menus=ms.val()||{};staff=st.val()||{};settings=ss.val()||{};
+ oStaff.innerHTML='';
+ for(const [id,s] of Object.entries(staff)) oStaff.add(new Option(s.name,id));
+ await render();
+});
+
+logout.onclick=async()=>{await signOut(auth);localStorage.clear();location.href='login.html'};
+date.onchange=render;
+prev.onclick=()=>move(-1);
+next.onclick=()=>move(1);
+function move(n){
+ const d=new Date(date.value+'T12:00:00');d.setDate(d.getDate()+n);
+ date.value=d.toISOString().slice(0,10);render();
+}
+
+function scheduleFor(sid, dayIndex, override){
+ if(override) return override.off?null:override;
+ const w=staff[sid]?.weekly?.[dayIndex];
+ if(!w||w.off) return null;
+ return w;
+}
+
+async function render(){
+ if(!shop)return;
+ const d=new Date(date.value+'T12:00:00');
+ const [rSnap,bSnap,oSnap]=await Promise.all([
+   get(ref(db,`shops/${shop}/reservations/${date.value}`)),
+   get(ref(db,`shops/${shop}/blocks/${date.value}`)),
+   get(ref(db,`shops/${shop}/workOverrides/${date.value}`))
+ ]);
+ const reservations=rSnap.val()||{}, blocks=bSnap.val()||{}, overrides=oSnap.val()||{};
+ board.innerHTML='';
+
+ for(const [sid,s] of Object.entries(staff)){
+   const box=document.createElement('div');box.className='item';
+   box.innerHTML=`<h3>${s.name}</h3>`;
+   const sch=scheduleFor(sid,d.getDay(),overrides[sid]);
+
+   if(!sch){
+     box.insertAdjacentHTML('beforeend',`<p class="warn">本日休み</p>`);
+     board.append(box);continue;
+   }
+
+   const start=tmin(sch.start), end=tmin(sch.end);
+   const rs=Object.entries(reservations)
+      .filter(([id,x])=>x.staffId===sid&&x.status!=='cancelled')
+      .sort((a,b)=>a[1].start-b[1].start);
+   const bs=Object.entries(blocks[sid]||{}).sort((a,b)=>a[1].start-b[1].start);
+
+   // Timeline in 30-minute rows. Existing bookings/blocks are shown; empty rows can create a block.
+   let html=`<table><tr><th>時間</th><th>内容</th></tr>`;
+   for(let m=start;m<end;m+=30){
+     const booking=rs.find(([id,x])=>m>=x.start&&m<x.end);
+     const block=bs.find(([id,x])=>m>=x.start&&m<x.end);
+
+     if(booking){
+       const [id,x]=booking;
+       const first=m===x.start;
+       html+=`<tr><td>${fmt(m)}</td><td>${first?`<b>${x.name}</b>　${Object.values(x.menus||{}).map(v=>v.name).join('＋')}
+       <button class="danger" data-cancel="${id}" data-sid="${sid}" style="float:right">キャンセル</button>`:'予約中'}</td></tr>`;
+     }else if(block){
+       const [id,x]=block;
+       const first=m===x.start;
+       html+=`<tr><td>${fmt(m)}</td><td>${first?`<b>${x.title||'休憩・私用'}</b>
+       <button class="danger" data-delblock="${id}" data-sid="${sid}" style="float:right">解除</button>`:'予定ブロック'}</td></tr>`;
+     }else{
+       html+=`<tr><td>${fmt(m)}</td><td><button type="button" class="secondary" data-free="${m}" data-sid="${sid}">空き　→ 休憩・私用にする</button></td></tr>`;
+     }
+   }
+   html+='</table>';
+   box.insertAdjacentHTML('beforeend',html);
+   board.append(box);
+ }
+
+ // reflect selected stylist override/default into fields
+ const sid=oStaff.value;
+ if(sid){
+   const ov=overrides[sid];
+   const def=staff[sid]?.weekly?.[d.getDay()]||{off:true,start:'09:00',end:'19:00'};
+   const cur=ov||def;
+   oOff.checked=!!cur.off;oStart.value=cur.start||'09:00';oEnd.value=cur.end||'19:00';
+ }
+}
+
+oStaff.onchange=async()=>{
+      const d=new Date(date.value+'T12:00:00');
+      const ov=(await get(ref(db,`shops/${shop}/workOverrides/${date.value}/${oStaff.value}`))).val();
+      const def=staff[oStaff.value]?.weekly?.[d.getDay()]||{off:true,start:'09:00',end:'19:00'};
+      const cur=ov||def;
+      oOff.checked=!!cur.off;
+      oStart.value=cur.start||'09:00';
+      oEnd.value=cur.end||'19:00';
+    };
+
+document.addEventListener('click',async e=>{
+ if(e.target.dataset.free){
+   const sid=e.target.dataset.sid,start=+e.target.dataset.free;
+   const mins=prompt('何分ブロックしますか？','30');
+   if(!mins)return;
+   const dur=Math.max(5,+mins||30);
+   const title=prompt('内容（例：休憩、私用）','休憩')||'休憩';
+   await set(push(ref(db,`shops/${shop}/blocks/${date.value}/${sid}`)),{start,end:start+dur,title});
+   await render();
+ }
+ if(e.target.dataset.delblock){
+   await remove(ref(db,`shops/${shop}/blocks/${date.value}/${e.target.dataset.sid}/${e.target.dataset.delblock}`));
+   await render();
+ }
+ if(e.target.dataset.cancel){
+   const id=e.target.dataset.cancel,sid=e.target.dataset.sid;
+   await update(ref(db,`shops/${shop}/reservations/${date.value}/${id}`),{status:'cancelled'});
+   // release any lock values owned by this booking id
+   await runTransaction(ref(db,`shops/${shop}/locks/${date.value}/${sid}`),cur=>{
+     if(!cur)return cur;for(const [k,v] of Object.entries(cur))if(v===id)delete cur[k];return cur;
+   });
+   await render();
+ }
+});
+
+saveOverride.onclick=async()=>{
+ if(!oStaff.value){msg.textContent='スタイリストを選んでください。';return;}
+ const start=oStart.value||'09:00', end=oEnd.value||'19:00';
+ if(!oOff.checked && tmin(end)<=tmin(start)){
+   msg.textContent='終了時間は開始時間より後にしてください。';
+   return;
+ }
+ try{
+   await set(ref(db,`shops/${shop}/workOverrides/${date.value}/${oStaff.value}`),{
+     off:oOff.checked,start,end
+   });
+   msg.textContent='この日の予約受付時間を保存しました。';
+   await render();
+ }catch(err){
+   console.error(err);
+   msg.textContent='保存できませんでした：'+(err.code||err.message||err);
+ }
+};
+
+clearOverride.onclick=async()=>{
+ if(!oStaff.value){msg.textContent='スタイリストを選んでください。';return;}
+ try{
+   await remove(ref(db,`shops/${shop}/workOverrides/${date.value}/${oStaff.value}`));
+   msg.textContent='通常の予約受付時間に戻しました。';
+   await render();
+ }catch(err){
+   console.error(err);
+   msg.textContent='戻せませんでした：'+(err.code||err.message||err);
+ }
+};
 </script></body></html>
