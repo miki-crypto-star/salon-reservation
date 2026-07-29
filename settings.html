@@ -48,11 +48,6 @@ const saveAll=el('saveAll'),saveBottom=el('saveBottom'),logout=el('logout'),shop
 maxDays=el('maxDays'),sameDay=el('sameDay'),cutoff=el('cutoff'),menuList=el('menuList'),
 addMenu=el('addMenu'),staffList=el('staffList'),addStaff=el('addStaff'),msg=el('msg'),
 closedDays=el('closedDays'),customerUrl=el('customerUrl'),customerQr=el('customerQr');
-const $=id=>document.getElementById(id);
-const saveAll=$('saveAll'), logout=$('logout'), shopName=$('shopName'), slotStep=$('slotStep'),
-maxDays=$('maxDays'), sameDay=$('sameDay'), cutoff=$('cutoff'), closedDays=$('closedDays'),
-customerUrl=$('customerUrl'), customerQr=$('customerQr'), menuList=$('menuList'),
-addMenu=$('addMenu'), staffList=$('staffList'), addStaff=$('addStaff'), msg=$('msg');
 let shop='', menus={}, staff={}, settings={};
 const days=['日','月','火','水','木','金','土'];
 const newId=()=>((crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2))).replaceAll('-','').slice(0,12);
