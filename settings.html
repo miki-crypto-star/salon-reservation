@@ -52,6 +52,16 @@ let shop='', menus={}, staff={}, settings={};
 const days=['日','月','火','水','木','金','土'];
 const newId=()=>((crypto.randomUUID?crypto.randomUUID():Date.now().toString(36)+Math.random().toString(36).slice(2))).replaceAll('-','').slice(0,12);
 
+const round5=n=>Math.max(0,Math.round((Number(n)||0)/5)*5);
+const time5=t=>{
+  if(!t)return t;
+  const [h,m]=t.split(':').map(Number);
+  let total=Math.round((h*60+m)/5)*5;
+  total=Math.max(0,Math.min(total,23*60+55));
+  return `${String(Math.floor(total/60)).padStart(2,'0')}:${String(total%60).padStart(2,'0')}`;
+};
+
+
 onAuthStateChanged(auth,async u=>{
  if(!u){location.href='login.html';return}
  const s=await get(ref(db,`users/${u.uid}/shopCode`)); if(!s.exists()){location.href='login.html';return}
@@ -88,9 +98,9 @@ function render(){
  staffList.innerHTML='';
  Object.entries(staff).forEach(([sid,s])=>{
   const d=document.createElement('div');d.className='item';
-  const services=Object.entries(menus).map(([mid,m])=>{const sv=s.services?.[mid]||{enabled:false,minutes:60};return `<div class="row"><label style="flex:2"><input style="width:auto" type="checkbox" data-enabled="${sid}:${mid}" ${sv.enabled?'checked':''}> ${m.name}</label><div><input type="number" min="5" data-sminutes="${sid}:${mid}" value="${sv.minutes||60}"></div><div class="small">分</div></div>`}).join('');
-  const weekly=days.map((x,i)=>{const w=s.weekly?.[i]||{off:i===0,start:'09:00',end:'19:00'};return `<tr><td>${x}</td><td><input style="width:auto" type="checkbox" data-work="${sid}:${i}" ${!w.off?'checked':''}></td><td><input type="time" data-start="${sid}:${i}" value="${w.start||'09:00'}"></td><td><input type="time" data-end="${sid}:${i}" value="${w.end||'19:00'}"></td></tr>`}).join('');
-  d.innerHTML=`<div class="row"><div><label>スタイリスト名</label><input data-sname="${sid}" value="${s.name||''}"></div><div><label>インターバル（分）</label><input data-gap="${sid}" type="number" min="0" value="${s.intervalMinutes||0}"></div><div><label>退勤後の延長許容（分）</label><input data-ext="${sid}" type="number" min="0" value="${s.extensionMinutes||0}"></div><div style="flex:.4"><button type="button" class="danger" data-sd="${sid}">削除</button></div></div><h3>対応メニュー・施術時間</h3>${services}<h3 style="margin-top:16px">通常勤務</h3><table><tr><th>曜日</th><th>出勤</th><th>開始</th><th>終了</th></tr>${weekly}</table>`;staffList.append(d);
+  const services=Object.entries(menus).map(([mid,m])=>{const sv=s.services?.[mid]||{enabled:false,minutes:60};return `<div class="row"><label style="flex:2"><input style="width:auto" type="checkbox" data-enabled="${sid}:${mid}" ${sv.enabled?'checked':''}> ${m.name}</label><div><input type="number" min="5" step="5" data-sminutes="${sid}:${mid}" value="${sv.minutes||60}"></div><div class="small">分</div></div>`}).join('');
+  const weekly=days.map((x,i)=>{const w=s.weekly?.[i]||{off:i===0,start:'09:00',end:'19:00'};return `<tr><td>${x}</td><td><input style="width:auto" type="checkbox" data-work="${sid}:${i}" ${!w.off?'checked':''}></td><td><input type="time" step="300" data-start="${sid}:${i}" value="${w.start||'09:00'}"></td><td><input type="time" step="300" data-end="${sid}:${i}" value="${w.end||'19:00'}"></td></tr>`}).join('');
+  d.innerHTML=`<div class="row"><div><label>スタイリスト名</label><input data-sname="${sid}" value="${s.name||''}"></div><div><label>インターバル（分）</label><input data-gap="${sid}" type="number" min="0" step="5" value="${s.intervalMinutes||0}"></div><div><label>退勤後の延長許容（分）</label><input data-ext="${sid}" type="number" min="0" value="${s.extensionMinutes||0}"></div><div style="flex:.4"><button type="button" class="danger" data-sd="${sid}">削除</button></div></div><h3>対応メニュー・施術時間</h3>${services}<h3 style="margin-top:16px">通常勤務</h3><table><tr><th>曜日</th><th>出勤</th><th>開始</th><th>終了</th></tr>${weekly}</table>`;staffList.append(d);
  });
 }
 addMenu.onclick=()=>{menus[newId()]={name:'新規メニュー'};render()};
@@ -98,9 +108,9 @@ addStaff.onclick=()=>{const weekly={};for(let i=0;i<7;i++)weekly[i]={off:i===0,s
 document.addEventListener('click',e=>{if(e.target.dataset.md){delete menus[e.target.dataset.md];render()}if(e.target.dataset.sd){delete staff[e.target.dataset.sd];render()}});
 async function saveSettings(){
  document.querySelectorAll('[data-mname]').forEach(x=>menus[x.dataset.mname].name=x.value.trim());
- document.querySelectorAll('[data-sname]').forEach(x=>staff[x.dataset.sname].name=x.value.trim());document.querySelectorAll('[data-gap]').forEach(x=>staff[x.dataset.gap].intervalMinutes=+x.value||0);document.querySelectorAll('[data-ext]').forEach(x=>staff[x.dataset.ext].extensionMinutes=+x.value||0);
- document.querySelectorAll('[data-work]').forEach(x=>{const [s,d]=x.dataset.work.split(':');staff[s].weekly[d].off=!x.checked});document.querySelectorAll('[data-start]').forEach(x=>{const [s,d]=x.dataset.start.split(':');staff[s].weekly[d].start=x.value});document.querySelectorAll('[data-end]').forEach(x=>{const [s,d]=x.dataset.end.split(':');staff[s].weekly[d].end=x.value});
- document.querySelectorAll('[data-enabled]').forEach(x=>{const [s,m]=x.dataset.enabled.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].enabled=x.checked});document.querySelectorAll('[data-sminutes]').forEach(x=>{const [s,m]=x.dataset.sminutes.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].minutes=+x.value||60});
+ document.querySelectorAll('[data-sname]').forEach(x=>staff[x.dataset.sname].name=x.value.trim());document.querySelectorAll('[data-gap]').forEach(x=>staff[x.dataset.gap].intervalMinutes=round5(x.value));document.querySelectorAll('[data-ext]').forEach(x=>staff[x.dataset.ext].extensionMinutes=+x.value||0);
+ document.querySelectorAll('[data-work]').forEach(x=>{const [s,d]=x.dataset.work.split(':');staff[s].weekly[d].off=!x.checked});document.querySelectorAll('[data-start]').forEach(x=>{const [s,d]=x.dataset.start.split(':');staff[s].weekly[d].start=time5(x.value)});document.querySelectorAll('[data-end]').forEach(x=>{const [s,d]=x.dataset.end.split(':');staff[s].weekly[d].end=time5(x.value)});
+ document.querySelectorAll('[data-enabled]').forEach(x=>{const [s,m]=x.dataset.enabled.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].enabled=x.checked});document.querySelectorAll('[data-sminutes]').forEach(x=>{const [s,m]=x.dataset.sminutes.split(':');staff[s].services??={};staff[s].services[m]??={};staff[s].services[m].minutes=round5(x.value)||60});
  settings={shopName:shopName.value.trim()||'美容室',slotStep:+slotStep.value||10,maxBookingDays:+maxDays.value||90,sameDay:sameDay.value==='true',cutoffMinutes:+cutoff.value||0,closedDays:[...closedDays.querySelectorAll('input:checked')].map(x=>Number(x.value))};
  try{
  await Promise.all([set(ref(db,`shops/${shop}/settings`),settings),set(ref(db,`shops/${shop}/menus`),menus),set(ref(db,`shops/${shop}/staff`),staff)]);
