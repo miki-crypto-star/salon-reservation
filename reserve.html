@@ -57,146 +57,133 @@ async function renderSlots(d){
  selectedChoice=null;
  const date=dkey(d);
 
- const [resSnap,blockSnap,ovSnap]=await Promise.all([
-   get(ref(db,`shops/${shop}/reservations/${date}`)),
-   get(ref(db,`shops/${shop}/blocks/${date}`)),
-   get(ref(db,`shops/${shop}/workOverrides/${date}`))
- ]);
+ try{
+   // お客様画面では氏名・電話番号を含む reservations は読まない。
+   // 公開してよい予約占有情報 locks と予定 blocks だけで空きを判定する。
+   const [lockSnap,blockSnap,ovSnap]=await Promise.all([
+     get(ref(db,`shops/${shop}/locks/${date}`)),
+     get(ref(db,`shops/${shop}/blocks/${date}`)),
+     get(ref(db,`shops/${shop}/workOverrides/${date}`))
+   ]);
 
- const reservations=resSnap.val()||{};
- const blocks=blockSnap.val()||{};
- const overrides=ovSnap.val()||{};
+   const locks=lockSnap.val()||{};
+   const blocks=blockSnap.val()||{};
+   const overrides=ovSnap.val()||{};
 
- let ids=Object.keys(staff).filter(eligible);
- if(staffSel.value!=='any') ids=ids.filter(x=>x===staffSel.value);
+   let ids=Object.keys(staff).filter(eligible);
+   if(staffSel.value!=='any') ids=ids.filter(x=>x===staffSel.value);
 
- const byTime=new Map();
- const now=new Date();
- const step=+settings.slotStep||10;
+   const byTime=new Map();
+   const now=new Date();
+   const nowMs=Date.now();
+   const step=+settings.slotStep||10;
+   const PENDING_TTL=120000;
 
- for(const sid of ids){
-   const w=daySchedule(sid,d,overrides);
-   if(!w) continue;
+   const lockIsActive=v=>{
+     if(typeof v==='string') return true; // 旧形式の確定済みロック
+     if(!v||typeof v!=='object') return false;
+     if(v.confirmed===true) return true;
+     const createdAt=+v.createdAt||0;
+     return createdAt && (nowMs-createdAt)<PENDING_TTL;
+   };
 
-   const baseStart=tmin(w.start);
-   const baseEnd=tmin(w.end);
-   const limit=baseEnd+(+staff[sid].extensionMinutes||0);
-   const dur=duration(sid);
-   const gap=+staff[sid].intervalMinutes||0;
+   for(const sid of ids){
+     const w=daySchedule(sid,d,overrides);
+     if(!w) continue;
 
-   // This stylist's confirmed active reservations are the source of truth.
-   const activeReservations=Object.values(reservations).filter(r=>
-     r &&
-     r.staffId===sid &&
-     r.status!=='cancelled' &&
-     Number.isFinite(+r.start) &&
-     Number.isFinite(+r.end)
-   );
+     const baseStart=tmin(w.start);
+     const baseEnd=tmin(w.end);
+     const limit=baseEnd+(+staff[sid].extensionMinutes||0);
+     const dur=duration(sid);
+     const gap=+staff[sid].intervalMinutes||0;
+     const staffLocks=locks?.[sid]||{};
 
-   for(let start=baseStart;start+dur<=limit;start+=step){
-     const startDt=new Date(
-       d.getFullYear(),d.getMonth(),d.getDate(),
-       Math.floor(start/60),start%60
-     );
+     for(let st=baseStart;st+dur<=limit;st+=step){
+       const startDt=new Date(
+         d.getFullYear(),d.getMonth(),d.getDate(),
+         Math.floor(st/60),st%60
+       );
 
-     if(startDt.getTime()-now.getTime() < (+settings.cutoffMinutes||0)*60000) continue;
+       if(startDt.getTime()-now.getTime() < (+settings.cutoffMinutes||0)*60000) continue;
 
-     const end=start+dur;
-     const occupiedEnd=end+gap;
-     let bad=false;
+       const finish=st+dur;
+       const occupiedEnd=finish+gap;
+       let bad=false;
 
-     // Existing reservation: include that reservation's own post-service interval.
-     for(const r of activeReservations){
-       const existingGap=+staff[sid].intervalMinutes||0;
-       const rStart=+r.start;
-       const rEnd=+r.end+existingGap;
-       if(start<rEnd && occupiedEnd>rStart){
-         bad=true;
-         break;
-       }
-     }
-
-     // Break/private block.
-     if(!bad){
-       for(const b of Object.values(blocks?.[sid]||{})){
-         if(start<+b.end && end>+b.start){
+       // 5分単位の占有ロックを確認。
+       for(const k of lockKeys(st,occupiedEnd)){
+         if(lockIsActive(staffLocks[k])){
            bad=true;
            break;
          }
        }
-     }
 
-     if(!bad){
-       const key=fmt(start);
-       if(!byTime.has(key)) byTime.set(key,[]);
-       byTime.get(key).push({sid,start,end,gap});
+       // 休憩・私用ブロック。
+       if(!bad){
+         for(const b of Object.values(blocks?.[sid]||{})){
+           if(st<+b.end && finish>+b.start){
+             bad=true;
+             break;
+           }
+         }
+       }
+
+       if(!bad){
+         const key=fmt(st);
+         if(!byTime.has(key)) byTime.set(key,[]);
+         byTime.get(key).push({sid,start:st,end:finish,gap});
+       }
      }
    }
- }
 
- slots.innerHTML='';
- [...byTime.entries()]
-   .sort((a,b)=>a[0].localeCompare(b[0]))
-   .forEach(([time,arr])=>{
-     const b=document.createElement('button');
-     b.type='button';
-     b.className='choice';
-     b.textContent=time;
-     b.onclick=()=>{
-       [...slots.children].forEach(x=>x.classList.remove('active'));
-       b.classList.add('active');
-       selectedChoice=arr[0];
-     };
-     slots.append(b);
-   });
+   slots.innerHTML='';
+   [...byTime.entries()]
+     .sort((a,b)=>a[0].localeCompare(b[0]))
+     .forEach(([time,arr])=>{
+       const b=document.createElement('button');
+       b.type='button';
+       b.className='choice';
+       b.textContent=time;
+       b.onclick=()=>{
+         [...slots.children].forEach(x=>x.classList.remove('active'));
+         b.classList.add('active');
+         selectedChoice=arr[0];
+       };
+       slots.append(b);
+     });
 
- if(!slots.children.length){
-   slots.textContent='この日は予約可能な時間がありません。';
+   if(!slots.children.length){
+     slots.textContent='この日は予約可能な時間がありません。';
+   }
+ }catch(err){
+   console.error(err);
+   slots.textContent='空き時間を読み込めませんでした。ページを再読み込みしてください。';
  }
 }
 
 async function acquire(date,sid,start,end,gap,bid){
  const rr=ref(db,`shops/${shop}/locks/${date}/${sid}`);
  const need=lockKeys(start,end+gap);
-
- // Read active reservations immediately before locking.
- // This lets us distinguish real locks from legacy orphaned locks.
- const resSnap=await get(ref(db,`shops/${shop}/reservations/${date}`));
- const reservations=resSnap.val()||{};
- const activeIds=new Set(
-   Object.entries(reservations)
-     .filter(([id,r])=>r && r.status!=='cancelled')
-     .map(([id])=>id)
- );
-
  const now=Date.now();
- const PENDING_TTL=120000; // 2 minutes
+ const PENDING_TTL=120000;
  let ok=false;
 
  const tx=await runTransaction(rr,c=>{
    c=c||{};
 
-   // Clean only stale/orphaned locks.
+   // 予約確定前の一時ロックだけ、2分経過していれば掃除する。
+   // 確定済みロックと旧形式ロックはここでは消さない。
    for(const [k,v] of Object.entries(c)){
-     if(typeof v==='string'){
-       // Legacy lock: keep only when its reservation still exists and is active.
-       if(!activeIds.has(v)) delete c[k];
-     }else if(v && typeof v==='object'){
-       const lockBid=v.bid;
+     if(v && typeof v==='object' && v.confirmed!==true){
        const createdAt=+v.createdAt||0;
-       const confirmed=lockBid && activeIds.has(lockBid);
-       const stillPending=createdAt && (now-createdAt)<PENDING_TTL;
-       if(!confirmed && !stillPending) delete c[k];
-     }else{
-       delete c[k];
+       if(!createdAt || (now-createdAt)>=PENDING_TTL) delete c[k];
      }
    }
 
-   // Anything still occupying one of the required 5-minute keys blocks the booking.
    if(need.some(k=>c[k])) return;
 
    for(const k of need){
-     c[k]={bid,createdAt:now};
+     c[k]={bid,createdAt:now,confirmed:false};
    }
    ok=true;
    return c;
@@ -205,7 +192,26 @@ async function acquire(date,sid,start,end,gap,bid){
  return ok&&tx.committed;
 }
 
+async function confirmLock(date,sid,bid){
+ await runTransaction(ref(db,`shops/${shop}/locks/${date}/${sid}`),c=>{
+   if(!c)return c;
+   for(const [k,v] of Object.entries(c)){
+     if(v && typeof v==='object' && v.bid===bid){
+       c[k]={...v,confirmed:true};
+     }
+   }
+   return c;
+ });
+}
+
 async function release(date,sid,bid){await runTransaction(ref(db,`shops/${shop}/locks/${date}/${sid}`),c=>{if(!c)return c;for(const[k,v]of Object.entries(c)){const lockBid=typeof v==='string'?v:v?.bid;if(lockBid===bid)delete c[k]}return c})}
-form.onsubmit=async e=>{e.preventDefault();msg.textContent='';if(!selectedDate||!selectedChoice){msg.textContent='日時を選択してください。';return}const sid=selectedChoice.sid,s=staff[sid],bid=push(ref(db,`shops/${shop}/reservations/${selectedDate}`)).key;const ok=await acquire(selectedDate,sid,selectedChoice.start,selectedChoice.end,selectedChoice.gap,bid);if(!ok){msg.textContent='申し訳ありません。直前に別の予約が入りました。時間を選び直してください。';return}const rec={staffId:sid,staffName:s.name,start:selectedChoice.start,end:selectedChoice.end,menus:selectedMenus.reduce((o,mid)=>(o[mid]={name:menus[mid].name,minutes:+s.services[mid].minutes||0},o),{}),name:custName.value.trim(),phone:phone.value.trim(),note:note.value.trim(),status:'reserved',source:'web',createdAt:Date.now()};try{await set(ref(db,`shops/${shop}/reservations/${selectedDate}/${bid}`),rec)}catch(err){await release(selectedDate,sid,bid);msg.textContent='予約保存に失敗しました。';return}document.querySelectorAll('main > section, main > form').forEach(x=>x.classList.add('hidden'));done.classList.remove('hidden');doneTime.textContent=`${selectedDate} ${fmt(rec.start)}から`;doneInfo.textContent=`担当：${s.name} / ${selectedMenus.map(mid=>menus[mid].name).join('＋')}`;calendarBtn.onclick=()=>downloadICS(rec,selectedDate)};
+form.onsubmit=async e=>{e.preventDefault();msg.textContent='';if(!selectedDate||!selectedChoice){msg.textContent='日時を選択してください。';return}const sid=selectedChoice.sid,s=staff[sid],bid=push(ref(db,`shops/${shop}/reservations/${selectedDate}`)).key;const ok=await acquire(selectedDate,sid,selectedChoice.start,selectedChoice.end,selectedChoice.gap,bid);if(!ok){msg.textContent='申し訳ありません。直前に別の予約が入りました。時間を選び直してください。';return}const rec={staffId:sid,staffName:s.name,start:selectedChoice.start,end:selectedChoice.end,menus:selectedMenus.reduce((o,mid)=>(o[mid]={name:menus[mid].name,minutes:+s.services[mid].minutes||0},o),{}),name:custName.value.trim(),phone:phone.value.trim(),note:note.value.trim(),status:'reserved',source:'web',createdAt:Date.now()};try{
+  await set(ref(db,`shops/${shop}/reservations/${selectedDate}/${bid}`),rec);
+  await confirmLock(selectedDate,sid,bid);
+}catch(err){
+  await release(selectedDate,sid,bid);
+  msg.textContent='予約保存に失敗しました。';
+  return;
+}document.querySelectorAll('main > section, main > form').forEach(x=>x.classList.add('hidden'));done.classList.remove('hidden');doneTime.textContent=`${selectedDate} ${fmt(rec.start)}から`;doneInfo.textContent=`担当：${s.name} / ${selectedMenus.map(mid=>menus[mid].name).join('＋')}`;calendarBtn.onclick=()=>downloadICS(rec,selectedDate)};
 function downloadICS(rec,date){const [y,m,d]=date.split('-').map(Number),pad=n=>String(n).padStart(2,'0'),dt=n=>`${y}${pad(m)}${pad(d)}T${pad(Math.floor(n/60))}${pad(n%60)}00`;const title=`${settings.shopName||'美容室'} 予約`,desc=`担当：${rec.staffName} / ${Object.values(rec.menus).map(x=>x.name).join('＋')}`;const ics=`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${dt(rec.start)}\nDTEND:${dt(rec.end)}\nSUMMARY:${title}\nDESCRIPTION:${desc}\nEND:VEVENT\nEND:VCALENDAR`;const blob=new Blob([ics],{type:'text/calendar'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='salon-reservation.ics';a.click();setTimeout(()=>URL.revokeObjectURL(a.href),500)}
 </script></body></html>

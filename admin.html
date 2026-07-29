@@ -125,12 +125,47 @@ function scheduleFor(sid, dayIndex, override){
 async function render(){
  if(!shop)return;
  const d=new Date(date.value+'T12:00:00');
- const [rSnap,bSnap,oSnap]=await Promise.all([
+ const [rSnap,bSnap,oSnap,lSnap]=await Promise.all([
    get(ref(db,`shops/${shop}/reservations/${date.value}`)),
    get(ref(db,`shops/${shop}/blocks/${date.value}`)),
-   get(ref(db,`shops/${shop}/workOverrides/${date.value}`))
+   get(ref(db,`shops/${shop}/workOverrides/${date.value}`)),
+   get(ref(db,`shops/${shop}/locks/${date.value}`))
  ]);
- const reservations=rSnap.val()||{}, blocks=bSnap.val()||{}, overrides=oSnap.val()||{};
+ const reservations=rSnap.val()||{}, blocks=bSnap.val()||{}, overrides=oSnap.val()||{}, dayLocks=lSnap.val()||{};
+
+ // 管理画面では予約本体を読めるので、予約が存在しない古いロックを自動整理する。
+ // 予約処理中の一時ロック（2分以内）は消さない。
+ const activeIds=new Set(
+   Object.entries(reservations)
+     .filter(([id,r])=>r && r.status!=='cancelled')
+     .map(([id])=>id)
+ );
+ const nowMs=Date.now(), PENDING_TTL=120000;
+ for(const [lockSid,lockMap] of Object.entries(dayLocks)){
+   let changed=false;
+   const cleaned={...(lockMap||{})};
+
+   for(const [k,v] of Object.entries(cleaned)){
+     const lockBid=typeof v==='string'?v:v?.bid;
+     const confirmed=typeof v==='string' || v?.confirmed===true;
+     const pendingFresh=v && typeof v==='object' && v.confirmed!==true &&
+       (+v.createdAt||0) && (nowMs-(+v.createdAt))<PENDING_TTL;
+
+     if(confirmed){
+       if(!lockBid || !activeIds.has(lockBid)){
+         delete cleaned[k];
+         changed=true;
+       }
+     }else if(!pendingFresh){
+       delete cleaned[k];
+       changed=true;
+     }
+   }
+
+   if(changed){
+     await set(ref(db,`shops/${shop}/locks/${date.value}/${lockSid}`),cleaned);
+   }
+ }
  board.innerHTML='';
  reservationList.innerHTML='';
 
