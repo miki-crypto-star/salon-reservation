@@ -1,10 +1,17 @@
-<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>美容室予約システム</title><style>
-body{margin:0;font-family:system-ui,sans-serif;background:#f6f7f9;color:#1f2937}header{background:#182235;color:#fff;padding:22px}
-main{max-width:820px;margin:40px auto;padding:20px}.card{background:#fff;padding:28px;border-radius:16px;box-shadow:0 3px 18px #0001}
-a{display:inline-block;padding:14px 20px;margin:8px 8px 0 0;background:#26364f;color:#fff;text-decoration:none;border-radius:10px}
-small{color:#667085} </style></head><body><header><h1>美容室予約システム</h1></header><main><div class="card">
-<h2>フルサービス美容室 予約管理</h2><p>カット・カラー・パーマ・縮毛矯正・トリートメント等の複数メニューに対応。</p>
-<p><small>スタイリスト別施術時間／勤務時間／休憩／定休日／指名／複数メニュー予約対応</small></p>
-<a href="reserve.html?shop=demo">お客様予約画面</a><a href="login.html">店舗管理ログイン</a>
-</div></main></body></html>
+<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>美容室予約システム</title><style>
+:root{--bg:#f6f7f8;--card:#fff;--text:#1f2937;--sub:#6b7280;--line:#e5e7eb;--dark:#172033;--danger:#b91c1c;--accent:#2563eb;--ok:#166534}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:var(--dark);color:#fff;padding:18px 20px}header h1{margin:0;font-size:21px}main{max-width:1180px;margin:auto;padding:20px}
+.card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0000000d}h2,h3{margin-top:0}
+label{display:block;margin:10px 0 5px;font-weight:700}.muted{color:var(--sub);font-size:14px}.small{font-size:12px}.big{font-size:27px;font-weight:850}
+input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:9px;background:#fff}textarea{min-height:80px}
+button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#fff!important;color:var(--dark)!important;border:1px solid #d1d5db!important}.danger{background:var(--danger)!important}.accent{background:var(--accent)!important}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}.message{font-weight:700;margin-top:10px;white-space:pre-wrap}.choice{background:#fff;color:var(--dark);border:1px solid #d1d5db;margin:4px}.choice.active{background:var(--dark);color:#fff}.choice:disabled{opacity:.35;cursor:not-allowed}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.ok{background:#f0fdf4;color:var(--ok);padding:10px;border-radius:10px}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}.urlbox{overflow-wrap:anywhere;background:#f3f4f6;padding:10px;border-radius:9px}
+@media(max-width:760px){main{padding:12px}.grid2,.grid3{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
+</style></head><body>
+<header><h1>美容室予約システム</h1></header><main><section class="card"><h2>個人・小規模フルサービス美容室向け</h2>
+<p>カット・カラー・パーマ・縮毛矯正など、複数メニューの施術時間とスタイリストの勤務予定から空きを自動計算します。</p>
+<a class="btn" href="reserve.html?shop=demo">お客様予約画面</a> <a class="btn secondary" href="login.html">店舗管理ログイン</a></section></main></body></html>

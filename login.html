@@ -1,18 +1,18 @@
 <!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>店舗ログイン</title><style>
-:root{--bg:#f6f7f8;--card:#fff;--text:#1f2937;--sub:#6b7280;--line:#e5e7eb;--dark:#111827;--danger:#b91c1c;--accent:#2563eb}
+:root{--bg:#f6f7f8;--card:#fff;--text:#1f2937;--sub:#6b7280;--line:#e5e7eb;--dark:#172033;--danger:#b91c1c;--accent:#2563eb;--ok:#166534}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,"Segoe UI",sans-serif}
 header{background:var(--dark);color:#fff;padding:18px 20px}header h1{margin:0;font-size:21px}main{max-width:1180px;margin:auto;padding:20px}
 .card{background:var(--card);border-radius:14px;padding:18px;margin-bottom:16px;box-shadow:0 2px 12px #0000000d}h2,h3{margin-top:0}
 label{display:block;margin:10px 0 5px;font-weight:700}.muted{color:var(--sub);font-size:14px}.small{font-size:12px}.big{font-size:27px;font-weight:850}
 input,select,textarea,button{font:inherit}input,select,textarea{width:100%;padding:10px;border:1px solid #d1d5db;border-radius:9px;background:#fff}textarea{min-height:80px}
-button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#fff!important;color:var(--dark)!important;border:1px solid #d1d5db!important}.danger{background:var(--danger)!important}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
-.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}.message{font-weight:700;margin-top:10px}.choice{background:#fff;color:var(--dark);border:1px solid #d1d5db;margin:4px}.choice.active{background:var(--dark);color:#fff}.choice:disabled{opacity:.35;cursor:not-allowed}
-.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
-table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}
-@media(max-width:760px){main{padding:12px}.grid2,.grid3,.grid4{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
+button,.btn{border:0;border-radius:9px;padding:10px 14px;background:var(--dark);color:#fff;cursor:pointer;text-decoration:none;display:inline-block}.secondary{background:#fff!important;color:var(--dark)!important;border:1px solid #d1d5db!important}.danger{background:var(--danger)!important}.accent{background:var(--accent)!important}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}.row>*{flex:1}
+.item{border:1px solid var(--line);border-radius:12px;padding:12px;margin:10px 0}.message{font-weight:700;margin-top:10px;white-space:pre-wrap}.choice{background:#fff;color:var(--dark);border:1px solid #d1d5db;margin:4px}.choice.active{background:var(--dark);color:#fff}.choice:disabled{opacity:.35;cursor:not-allowed}
+.pill{display:inline-block;padding:4px 8px;border-radius:999px;background:#eef2ff;font-size:12px}.warn{background:#fff7ed;padding:12px;border-radius:10px;font-weight:700}.ok{background:#f0fdf4;color:var(--ok);padding:10px;border-radius:10px}.hidden{display:none!important}.center{text-align:center}nav{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}.staffCol{border-left:4px solid #d1d5db;padding-left:12px}.urlbox{overflow-wrap:anywhere;background:#f3f4f6;padding:10px;border-radius:9px}
+@media(max-width:760px){main{padding:12px}.grid2,.grid3{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
 </style></head><body>
-<header><h1>店舗管理ログイン</h1></header><main><form id="loginForm" class="card"><label>メールアドレス</label><input id="email" type="email" value="admin@salon.local" required><label>パスワード</label><input id="password" type="password" required><br><br><button>ログイン</button><div id="msg" class="message"></div></form></main>
+<header><h1>店舗管理ログイン</h1></header><main><form id="loginForm" class="card"><label>メールアドレス</label><input id="email" type="email" value="admin@salon.local" required autocomplete="username"><label>パスワード</label><input id="password" type="password" required autocomplete="current-password"><br><br><button>ログイン</button><div id="msg" class="message"></div></form></main>
 <script type="module">import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-auth.js";
 import { getDatabase, ref, get, set, update, push, remove, runTransaction } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-database.js";
@@ -27,5 +27,5 @@ const firebaseConfig = {
 };
 const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getDatabase(app);
 const loginForm=document.getElementById('loginForm'),email=document.getElementById('email'),password=document.getElementById('password'),msg=document.getElementById('msg');
-loginForm.onsubmit=async e=>{e.preventDefault();msg.textContent='';try{const c=await signInWithEmailAndPassword(auth,email.value.trim(),password.value);const s=await get(ref(db,`users/${c.user.uid}/shopCode`));if(!s.exists())throw new Error('店舗未設定');localStorage.setItem('shopCode',s.val());location.href='admin.html';}catch(err){console.error(err);msg.textContent=`ログインできません：${err.code||err.message}`;}};
+loginForm.addEventListener('submit',async e=>{e.preventDefault();msg.textContent='';try{const c=await signInWithEmailAndPassword(auth,email.value.trim(),password.value);const s=await get(ref(db,`users/${c.user.uid}/shopCode`));if(!s.exists())throw new Error('店舗未設定');localStorage.setItem('shopCode',s.val());location.href='admin.html';}catch(err){console.error(err);msg.textContent=`ログインできません：${err.code||err.message}`;}});
 </script></body></html>
