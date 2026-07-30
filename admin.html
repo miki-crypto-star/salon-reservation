@@ -13,7 +13,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:9px;border-bottom:1px so
 @media(max-width:760px){main{padding:12px}.grid2,.grid3,.grid4{grid-template-columns:1fr}.row>*{flex-basis:100%}th,td{font-size:12px;padding:6px}}
 </style></head>
 <body>
-<header><h1>予約管理</h1></header>
+<header><h1>予約管理</h1><div style="font-size:12px;opacity:.75">管理画面 v6.11</div></header>
 <main>
 <nav>
   <a class="btn secondary" href="settings.html">設定</a>
@@ -209,7 +209,7 @@ async function render(){
          <div>
            <b>${fmt(Number(x.start||0))}〜${fmt(Number(x.end||0))}</b><br>
            <b>${x.name||'お名前なし'}</b><br>
-           <span>電話：${x.phone||x.tel||'未登録'}</span><br>
+           <span><b>電話：</b>${x.phone||x.tel||x.telephone||'未登録'}</span><br>
            <span>担当：${sname}${menuNames?`　／　${menuNames}`:''}</span>
          </div>
          <div style="flex:0 0 auto">
@@ -288,7 +288,9 @@ async function render(){
        html+=`<tr>
          <td>${fmt(itemStart)}〜${fmt(itemEnd)}</td>
          <td>
-           <b>${x.name||'予約'}</b>${menuNames?`　${menuNames}`:''}
+           <b>${x.name||'予約'}</b><br>
+           <span><b>電話：</b>${x.phone||x.tel||x.telephone||'未登録'}</span><br>
+           <span>${menuNames||''}</span>
            <button class="danger" data-cancel="${item.id}" data-sid="${sid}" style="float:right">キャンセル</button>
          </td>
        </tr>`;
