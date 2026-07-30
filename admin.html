@@ -208,7 +208,9 @@ async function render(){
        <div class="row">
          <div>
            <b>${fmt(Number(x.start||0))}〜${fmt(Number(x.end||0))}</b><br>
-           ${x.name||'お名前なし'}　／　${sname}${menuNames?`　／　${menuNames}`:''}
+           <b>${x.name||'お名前なし'}</b><br>
+           <span>電話：${x.phone||x.tel||'未登録'}</span><br>
+           <span>担当：${sname}${menuNames?`　／　${menuNames}`:''}</span>
          </div>
          <div style="flex:0 0 auto">
            <button type="button" class="danger" data-cancel="${id}" data-sid="${x.staffId||''}">キャンセル</button>
